@@ -15,3 +15,12 @@
 
 ### Maybe in the future
  - Quick Access to listings of selected cards
+
+ # Sites used
+
+ ## Yu-Gi-Oh Card Guide
+ - https://www.yugiohcardguide.com/yugioh-structure-decks.html
+ - https://www.yugiohcardguide.com/yugioh-starter-decks.html
+ - yugiohprices.com
+ - yugiohprodeck.com
+     - both apis

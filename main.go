@@ -1,6 +1,13 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/Iilun/survey/v2"
+	"github.com/manifoldco/promptui"
+)
 
 // https://db.ygoprodeck.com/api/v7/cardinfo.php
 type YgoProDecData struct {
@@ -65,6 +72,7 @@ type YugiohPricesByCardName struct {
 	} `json:"data"`
 }
 
+// http://yugiohprices.com/api/get_card_prices/card_name/print_tag
 type YugiohPricesDataByCardPrintTag struct {
 	Status string `json:"status"`
 	Data   []struct {
@@ -92,6 +100,7 @@ type YugiohPricesDataByCardPrintTag struct {
 	} `json:"data"`
 }
 
+// http://yugiohprices.com/api/get_card_prices/card_name/print_tag/rarity
 type YugiohPriceHistorySpecificTagAndRarity struct {
 	Status string `json:"status"`
 	Data   []struct {
@@ -101,6 +110,7 @@ type YugiohPriceHistorySpecificTagAndRarity struct {
 	} `json:"data"`
 }
 
+// http://yugiohprices.com/api/get_card_prices/set_data/{set_name}
 type YugioPriceSetData struct {
 	Status string `json:"status"`
 	Data   []struct {
@@ -128,7 +138,7 @@ type YugioPriceSetData struct {
 				Rarity    string `json:"rarity"`
 				PriceData struct {
 					Status string `json:"status"`
-					data   struct {
+					Data   struct {
 						Prices struct {
 							High      float32 `json:"high"`
 							Low       float32 `json:"low"`
@@ -153,7 +163,142 @@ type YugioPriceSetData struct {
 	} `json:"data"`
 }
 
+type YugiohProDeckSearchByType int
+
+type YuGiOhProDeckStructFields map[string]string
+
+func InitialzeYuGiOhProDeckMap() YuGiOhProDeckStructFields {
+	return YuGiOhProDeckStructFields{
+		"Name":        "name",
+		"FName":       "fname",
+		"Id":          "id",
+		"KonamiId":    "id",
+		"Type":        "type",
+		"Atk":         "atk",
+		"Def":         "def",
+		"Level":       "level",
+		"Race":        "race",
+		"Attribute":   "attribute",
+		"Link":        "link",
+		"LinkMarkers": "linkmarkers",
+		"Scale":       "scale",
+		"CardSet":     "cardset",
+		"Archetype":   "archetype",
+		"Banlist":     "banlist",
+		"Sort":        "sort",
+		"Format":      "format",
+		"Misc":        "misc",
+	}
+}
+
+type YuGiOhProDeckSearchData struct {
+	Name        string
+	FName       string
+	Id          int
+	KonamiId    int
+	Type        string
+	Atk         int
+	Def         int
+	Level       int
+	Race        string
+	Attribute   string
+	Link        string
+	LinkMarkers []string
+	Scale       int
+	CardSet     string
+	Archetype   string
+	Banlist     string
+	Sort        string
+	Format      string
+	Misc        bool // Will either be unpassed or if true will be passed as "yes"
+}
+
+func GetBanList() string {
+	banLists := []string{"TCG", "OCG", "GOAT"}
+	prompt := survey.Select{
+		Message: "Select the banlist",
+		Options: banLists,
+	}
+	selected := ""
+	err := survey.AskOne(&prompt, &selected)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return selected
+}
+
+func GetCardAttributes() string {
+	cardAttributes := []string{"Dark", "Divine", "Earth", "Fire", "Light", "Water", "Wind"}
+	prompt := survey.Select{
+		Message: "Select the card attribute",
+		Options: cardAttributes,
+	}
+	selected := ""
+	err := survey.AskOne(&prompt, &selected)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return selected
+}
+
+func GetLinkMarkers() string {
+	linkMarkersOptions := []string{"Top", "Bottom", "Left", "Right", "Bottom-Left", "Bottom-Right", "Top-Left", "Top-Right"}
+	prompt := survey.MultiSelect{
+		Message:  "Select your link markers",
+		Options:  linkMarkersOptions,
+		PageSize: 8,
+	}
+	selected := []string{}
+	err := survey.AskOne(&prompt, &selected)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return strings.Join(selected, ",")
+}
+
+func ProDeckPrompt() {
+	structFields := []string{"Name", "Fuzzy Name", "ID", "Konami ID", "Type", "ATK", "DEF", "Level", "Race", "Attribute", "Link", "LinkMarkers", "Scale", "Card Set", "Archetype", "Banlist", "Sort", "Format", "Misc"}
+	prompt := survey.MultiSelect{
+		Message:  "Select the fields you want to include in your search query",
+		Options:  structFields,
+		PageSize: 10,
+	}
+	selected := []string{}
+	err := survey.AskOne(&prompt, &selected)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Println(selected)
+	//return nil, nil
+}
+
+func GetDataToSearch() (*YuGiOhProDeckSearchData, error) {
+
+	validate := func(input string) error {
+		_, err := strconv.ParseFloat(input, 64)
+		if err != nil {
+			return fmt.Errorf("Invalid input")
+		}
+		return nil
+	}
+	prompt := promptui.Prompt{
+		Label:    "Enter the card ID",
+		Validate: validate,
+	}
+	res, err := prompt.Run()
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(res)
+	return nil, nil
+}
+
 func main() {
 	// Call the function
 	fmt.Println("Hello, World!")
+	ProDeckPrompt()
+	fmt.Println(GetLinkMarkers())
+	fmt.Println(GetCardAttributes())
+	fmt.Println(GetBanList())
+
 }
