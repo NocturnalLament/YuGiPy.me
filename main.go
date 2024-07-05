@@ -256,6 +256,49 @@ func GetLinkMarkers() string {
 	return strings.Join(selected, ",")
 }
 
+type CardArchetype string
+
+func PromptCardArchetype() {
+	cardArchetypes := []string{
+		"Albaz", "Ally of Justice", "Appliancer", "Ashened", "Abyss Actor", "Altergeist",
+		"Aquaactress", "Assault Mode", "Adamancipator", "Amazement", "Arcana Force", "Atlantean",
+		"Adventurer Token", "Amazoness", "Archfiend", "Aesir", "Amorphage", "Armed Dragon", "Agent", "Ancient Gear", "Aroma",
+		"Alien", "Ancient Warriors", "Artifact", "Batteryman", "Battlewasp", "Battlin Boxer", "Beetrooper", "Black Luster", "Blackwing",
+		"Blue-Eyes", "Bounzer", "Bujin", "Burning Abyss", "Buster Blader", "Butterspy", "Bystial", "Centur-Ion", "Chaos", "Chemicritter",
+		"Chronomaly", "Chrysalis", "Cipher", "Cloudian", "Code Talker", "Constellar", "Crusadia", "Crystal Beast", "Crystron", "Cubic", "Cyberdark",
+		"Cyber Dragon", "D/D/", "Danger!", "Darklord", "Dark Magician", "Dark Scorpion", "Dark World", "D.D.", "Deep Sea", "Deskbot", "Despia", "Destiny Hero",
+		"Digital Bug", "Dinomist", "Dinomorphia", "Dinowrestler", "Dododo", "Dogmatika", "Doodle Beast", "Dracoslayer", "Dragon Ruler", "Dragonmaid", "Dragunity",
+		"Dream Mirror", "Dryton", "Dual Avatar", "Duston", "Earthbound", "Edge Imp", "Edlich", "Elemental Hero", "Elementsaber", "Empowered Warrior", "Endymion",
+		"Evil Eye", "Evil Hero", "Evil Twin / Live Twin", "Evilswarm", "Evoltile", "Exosister", "Eyes Restrict", "Fabled", "Face Cards", "F.A.", "Fairy Tail", "Familiar-Posessed",
+		"Brotherhood of the Fire Fist", "Fire King", "Fire Warrior", "Flame Swordsman", "Flamvell", "Fleur", "Floowandereeze", "Flower Cardian", "Fluffal", "Forbidden One (Exodia)",
+		"Fortune Fairy", "Fortune Lady", "Fossil Fusion", "Frightfur", "Frog", "Fur Hire", "G Golem", "Gadget", "Gagaga", "Gaia", "Galaxy", "Ganbara", "Gate Guardian", "Gearfried", "Geargia",
+		"Gem", "Generaider", "Ghostrick", "Ghoti", "Gimmick Puppet", "Gishki", "Glacial Beast", "Gladiator Beast", "Goblin", "Goblin Biker", "Gogogo", "Gold Pride", "Gorgonic", "Gouki", "Goyo", "Gravekeeper",
+		"Graydle", "Gunkan", "Gusto", "Harpie", "Hazy Flame", "Heraldic Beast", "Heroic", "Hieratic", "Horus", "Ice Barrier", "Icejade", "Ignknight", "Ignister", "Impcantation", "Infernity", "Infernoble", "Infernoid",
+		"Infinitrack", "Invoked", "Inzektor", "Iron Chain", "Junk", "Jurrac", "Kaiju", "Karakuri", "Kashtira", "Knightmare", "Koa'ki Meiru", "Kozmo", "Krawler", "Krawler", "Kuriboh", "Labrynth", "Laval", "Libromancer", "Lightray",
+		"Lightsworn", "Lswarm", "Lunalight", "Lyrilusc", "Machina", "Madolche", "Magical Musket", "Magician", "Magikey", "Magistus", "Majespecter", "Malefic", "Mannadium", "Marincess", "Masked HERO", "Materiactor", "Mathmech", "Mayakashi",
+		"Mekk-Knight", "Meklord", "Melffy", "Melodious", "Memento", "Mermail", "Metalfoes", "Metaphys", "Mikanko", "Mist Valley", "Monarch", "Morphtronic", "Mystical Beast", "Mythical Beast", "Myutant", "Naturia", "Nekroz", "Nemleria", "Neo-Spacian",
+		"Neos", "Nemeses", "Nephthys", "Nimble", "Ninja", "Noble Knight", "Nordic", "Nouvelles", "Numeron", "Number", "Odd-Eyes", "Ogdoadic", "Orcust", "Ojama", "P.U.N.K.", "Paleozoic", "Parshath", "Penguin", "Performage", "Performapal", "Phantasm Spiral",
+		"Phantom Beast", "Photon", "Plunder Patroll", "Prank-Kids", "Predaplant", "Prediction Princess", "Purrely", "PSY-Framegear", "Psychic", "Qli", "Ragnaraika", "Raidraptor", "Red-Eyes", "Reptilianne", "Rescue-ACE", "Resonator", "Rikka", "Risebell",
+		"Ritual Beast", "Roid", "Rokket", "Rose", "Runick", "Sangen", "S-Force", "Salamangreat", "Scareclaw", "Scrap", "Shaddoll", "Shark", "Shining Sarcophagus", "Shinobird", "Shiranui", "Silent Magician", "Silent Swordsman", "Simorgh", "Sinful Spoils",
+		"Six Samurai", "Skull Servant", "Sky Striker", "Snake-Eye", "Solfachord", "Speedroid", "Spellbook", "Springan", "Spyral", "Spellcaster", "Spright", "Star Sereph", "Starry Knight", "Steelswarm", "Subterror", "Sunavalon", "Superheavy Samurai",
+		"Supreme King", "Swordsoul", "Sylvan", "Symphonic Warrior", "Synchron", "Tearlamants", "Tellarknight", "Tenyi", "T.G.", "The Agent", "The Phantom Knights", "The Weather", "Therion", "Thunder Dragon", "Time Thief", "Timelord", "Tindangle", "Tistina",
+		"Toon", "Traptrix", "Triamid", "Tri-Brigade", "Trickstar", "True King", "Twilightsworn", "U.A.", "Unchained", "Ursarctic", "Utopia", "Vaalmonica", "Vampire", "Vanquish Soul", "Vassal", "Vaylantz", "Vendread", "Venom", "Virtual World", "Visas Starfrost",
+		"Vision HERO", "Voiceless Voice", "Volcanic", "Vylon", "War Rock", "Watt", "Wind-up", "Windwitch", "Witchcrafter", "World Chalice", "World Legacy", "Worm", "Xtra HERO", "Xyz", "X-Saber", "Yang Zing", "Yosenju", "Yubel", "Zefra", "Zoodiac", "ZW", "Zombie",
+		"Zubaba",
+	}
+	prompt := survey.MultiSelect{
+		Message:  "Select the card archetype",
+		Options:  cardArchetypes,
+		PageSize: 10,
+	}
+	selected := []string{}
+	err := survey.AskOne(&prompt, &selected)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Println(selected)
+}
+
 func ProDeckPrompt() {
 	structFields := []string{"Name", "Fuzzy Name", "ID", "Konami ID", "Type", "ATK", "DEF", "Level", "Race", "Attribute", "Link", "LinkMarkers", "Scale", "Card Set", "Archetype", "Banlist", "Sort", "Format", "Misc"}
 	prompt := survey.MultiSelect{
@@ -272,12 +315,26 @@ func ProDeckPrompt() {
 	//return nil, nil
 }
 
+func PromptSortBy() {
+	sortByOptions := []string{"Name", "ATK", "DEF", "Type", "Level", "Id", "New"}
+	prompt := survey.Select{
+		Message: "Select the sort by option",
+		Options: sortByOptions,
+	}
+	selected := ""
+	err := survey.AskOne(&prompt, &selected)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Println(selected)
+}
+
 func GetDataToSearch() (*YuGiOhProDeckSearchData, error) {
 
 	validate := func(input string) error {
 		_, err := strconv.ParseFloat(input, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid input")
+			return fmt.Errorf("invalid input")
 		}
 		return nil
 	}
@@ -300,5 +357,5 @@ func main() {
 	fmt.Println(GetLinkMarkers())
 	fmt.Println(GetCardAttributes())
 	fmt.Println(GetBanList())
-
+	PromptCardArchetype()
 }
