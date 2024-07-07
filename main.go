@@ -211,6 +211,7 @@ type YuGiOhProDeckSearchData struct {
 	Sort        string
 	Format      string
 	Misc        bool // Will either be unpassed or if true will be passed as "yes"
+	Staple      bool // Will either be unpassed or if true will be passed as "yes"
 }
 
 func GetBanList() string {
@@ -233,12 +234,13 @@ func GetCardAttributes() string {
 		Message: "Select the card attribute",
 		Options: cardAttributes,
 	}
-	selected := ""
+	selected := []string{}
 	err := survey.AskOne(&prompt, &selected)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	return selected
+	selectedAttributes := strings.Join(selected, ",")
+	return selectedAttributes
 }
 
 func GetLinkMarkers() string {
@@ -256,9 +258,23 @@ func GetLinkMarkers() string {
 	return strings.Join(selected, ",")
 }
 
+func GetCardFormat() string {
+	cardFormats := []string{"OCG", "TCG", "Speed Duel", "Rush Duel", "Goat", "OCG Goat", "Duel Links"}
+	prompt := survey.Select{
+		Message: "Select the card format",
+		Options: cardFormats,
+	}
+	selected := ""
+	err := survey.AskOne(&prompt, &selected)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return selected
+}
+
 type CardArchetype string
 
-func PromptCardArchetype() {
+func PromptCardArchetype() string {
 	cardArchetypes := []string{
 		"Albaz", "Ally of Justice", "Appliancer", "Ashened", "Abyss Actor", "Altergeist",
 		"Aquaactress", "Assault Mode", "Adamancipator", "Amazement", "Arcana Force", "Atlantean",
@@ -296,10 +312,222 @@ func PromptCardArchetype() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	fmt.Println(selected)
+	joinedSelected := strings.Join(selected, ",")
+	return joinedSelected
 }
 
-func ProDeckPrompt() {
+func GetFilterName() string {
+	prompt := survey.Input{
+		Message: "Enter the name of the card",
+	}
+	userInput := ""
+	err := survey.AskOne(&prompt, &userInput)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return userInput
+}
+
+func GetCardLevelPrompt() string {
+	prompt := survey.Input{
+		Message: GetFilterPromptString("Level"),
+	}
+	input := ""
+	err := survey.AskOne(&prompt, &input)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return input
+}
+
+func GetFuzzyNameFilter() string {
+	prompt := survey.Input{
+		Message: GetFilterPromptString("Fuzzy Name"),
+	}
+	selected := ""
+	err := survey.AskOne(&prompt, &selected)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return selected
+}
+
+func GetCardIDPrompt() string {
+	prompt := survey.Input{
+		Message: GetFilterPromptString("ID"),
+	}
+	selected := ""
+	err := survey.AskOne(&prompt, &selected)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return selected
+}
+
+func GetCardKonamiId() string {
+	prompt := survey.Input{
+		Message: GetFilterPromptString("Konami ID"),
+	}
+	selected := ""
+	err := survey.AskOne(&prompt, &selected)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return selected
+}
+
+func GetCardType() string {
+	cardTypes := []string{"Normal Monster", "Effect Monster", "Synchro Monster", "Spell Card", "Trap Card", "Flip Tuner Monster", "Flip Tuner Effect Monster", "Gemini Monster",
+		"Normal Tuner Monster", "Pedulum Effect Monster", "Pendulum Effect Ritual Monster", "Pendulum Flip Effect Monster", "Pendulum Normal Monster", "Pendulum Tuner Effect Monster",
+		"Ritual Effect Monster", "Ritual Monster", "Spirit Monster", "Toon Monster", "Tuner Monster", "Union Effect Monster", "Fusion Monster", "Link Monster", "Pendulum Effect Fusion Monster",
+		"Synchro Monster", "Synchro Pendulum Effect Monster", "XYZ Monster", "XYZ Pendulum Effect Monster", "Skill Card", "Token"}
+	selectedCards := []string{}
+	prompt := survey.MultiSelect{
+		Message:  GetFilterPromptString("type"),
+		Options:  cardTypes,
+		PageSize: 10,
+	}
+	err := survey.AskOne(&prompt, &selectedCards)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	outCards := strings.Join(selectedCards, ",")
+	return outCards
+}
+
+func GetFilterPromptString(inputType string) string {
+	return fmt.Sprintf("Enter the %s of the card", inputType)
+}
+
+func GetAtkPrompt() string {
+	prompt := survey.Input{
+		Message: GetFilterPromptString("ATK"),
+	}
+	atkPoints := ""
+	err := survey.AskOne(&prompt, &atkPoints)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return atkPoints
+}
+
+func GetDefPrompt() string {
+	prompt := survey.Input{
+		Message: GetFilterPromptString("DEF"),
+	}
+	defPoints := ""
+	err := survey.AskOne(&prompt, &defPoints)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return defPoints
+}
+
+func GetLinkValuePrompt() string {
+	prompt := survey.Input{
+		Message: GetFilterPromptString("Link Value"),
+	}
+
+	linkValue := ""
+	err := survey.AskOne(&prompt, &linkValue)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return linkValue
+}
+
+func GetPendulumScalePrompt() string {
+	scale := ""
+	prompt := survey.Question{
+		Name: "scale",
+		Prompt: &survey.Input{
+			Message: GetFilterPromptString("Scale"),
+		},
+		Validate: func(input interface{}) error {
+			strInput, ok := input.(string)
+			if !ok {
+				return fmt.Errorf("invalid input")
+			}
+			scale, err := strconv.Atoi(strInput)
+			if err != nil {
+				return fmt.Errorf("invalid input")
+			}
+
+			if scale < 1 || scale > 8 {
+				return fmt.Errorf("invalid input")
+			}
+			return nil
+		},
+	}
+
+	err := survey.Ask([]*survey.Question{&prompt}, &scale)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return scale
+}
+
+func GetValsFromPrompt(selectedItems []string) {
+	response := make(map[string]string)
+	for _, item := range selectedItems {
+		switch item {
+		case "Name":
+			response["Name"] = GetFilterName()
+		case "FName":
+			response["FName"] = GetFuzzyNameFilter()
+		case "ID":
+			response["Id"] = GetCardIDPrompt()
+		case "Konami ID":
+			response["KonamiId"] = GetCardKonamiId()
+		case "Type":
+			response["Type"] = GetCardType()
+		case "ATK":
+			response["Atk"] = GetAtkPrompt()
+		case "DEF":
+			response["Def"] = GetDefPrompt()
+		case "Level":
+			response["Level"] = GetCardLevelPrompt()
+		case "Attributes":
+			response["Attributes"] = GetCardAttributes()
+		case "Link":
+			response["Link"] = GetLinkValuePrompt()
+		case "LinkMarkers":
+			response["LinkMarkers"] = GetLinkMarkers()
+		case "Scale":
+			response["Scale"] = GetPendulumScalePrompt()
+		case "Card Set":
+			response["CardSet"] = GetCardSetPrompt()
+		case "Archetype":
+			response["Archetype"] = PromptCardArchetype()
+		case "Banlist":
+			response["Banlist"] = GetBanList()
+		case "Sort":
+			response["sort"] = PromptSortBy()
+		case "Format":
+			response["Format"] = GetCardFormat()
+		case "Misc":
+			response["Misc"] = "yes"
+		case "Staple":
+			response["Staple"] = "yes"
+		case "has_effect":
+			response["has_effect"] = "yes"
+		}
+	}
+}
+
+func GetCardSetPrompt() string {
+	prompt := survey.Input{
+		Message: GetFilterPromptString("Card Set"),
+	}
+	cardSet := ""
+	err := survey.AskOne(&prompt, &cardSet)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return cardSet
+}
+
+func ProDeckPrompt() []string {
 	structFields := []string{"Name", "Fuzzy Name", "ID", "Konami ID", "Type", "ATK", "DEF", "Level", "Race", "Attribute", "Link", "LinkMarkers", "Scale", "Card Set", "Archetype", "Banlist", "Sort", "Format", "Misc"}
 	prompt := survey.MultiSelect{
 		Message:  "Select the fields you want to include in your search query",
@@ -312,10 +540,11 @@ func ProDeckPrompt() {
 		fmt.Println(err.Error())
 	}
 	fmt.Println(selected)
+	return selected
 	//return nil, nil
 }
 
-func PromptSortBy() {
+func PromptSortBy() string {
 	sortByOptions := []string{"Name", "ATK", "DEF", "Type", "Level", "Id", "New"}
 	prompt := survey.Select{
 		Message: "Select the sort by option",
@@ -325,8 +554,9 @@ func PromptSortBy() {
 	err := survey.AskOne(&prompt, &selected)
 	if err != nil {
 		fmt.Println(err.Error())
+		return ""
 	}
-	fmt.Println(selected)
+	return selected
 }
 
 func GetDataToSearch() (*YuGiOhProDeckSearchData, error) {
@@ -352,10 +582,12 @@ func GetDataToSearch() (*YuGiOhProDeckSearchData, error) {
 
 func main() {
 	// Call the function
+	fmt.Println(GetPendulumScalePrompt())
 	fmt.Println("Hello, World!")
 	ProDeckPrompt()
 	fmt.Println(GetLinkMarkers())
 	fmt.Println(GetCardAttributes())
 	fmt.Println(GetBanList())
 	PromptCardArchetype()
+
 }
