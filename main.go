@@ -9,18 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Logger interface {
-	Info(args ...interface{})
-	Debug(args ...interface{})
-	Error(args ...interface{})
-}
-
-type LogrusLogs struct {
-	*logrus.Logger
-}
-
-type StandardLogger struct{}
-
 // http://yugiohprices.com/api/get_card_prices/card_name/print_tag
 type YugiohPricesDataByCardPrintTag struct {
 	Status string `json:"status"`
