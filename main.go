@@ -1,7 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/NocturnalLament/yugigo/ygoprodeck"
@@ -115,11 +119,65 @@ func GetDataToSearch() (*ygoprodeck.YuGiOhProDeckSearchData, error) {
 	return item, nil
 }
 
-func main() {
+/* func main() {
+	hello := logger.StandardLogger{
+		Logger:      log.New(os.Stdout, "Hello: ", log.Ldate|log.Ltime|log.Lshortfile),
+		Level:       logger.Info,
+		LogFilePath: "logr.log",
+	}
+	hello.Info("Hello, World!")
 	// Call the function
-	GetDataToSearch()
+	item, _ := GetDataToSearch()
+	mapItem := item.Mapify()
+	values := url.Values{}
+	for k, v := range mapItem {
+		if v != "Default" && v != "0" {
+			values.Add(k, v)
+		}
+	}
+	encodedStrin := values.Encode()
+	urlThing := "https://db.ygoprodeck.com/api/v7/cardinfo.php?" + encodedStrin
+	fmt.Println(urlThing)
+	data, err := http.Get(urlThing)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer data.Body.Close()
+	var result map[string]interface{}
+
+	// Decode the response body to the struct or map
+	err = json.NewDecoder(data.Body).Decode(&result)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//var y ygoprodeck.YgoProDecData
+	//bodyByte, err := io.ReadAll(data.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// err = json.Unmarshal(bodyByte, &y)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Println(y.Data[0].Name)
+
+	// Now `result` holds the decoded JSON data
+	var cards []ygoprodeck.YgoProDeckCard
+
+	bodyByte, err := io.ReadAll(data.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = json.Unmarshal(bodyByte, &cards)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(data.Body)
+	fmt.Println(bodyByte)
+	data.Body.Close()
 	log := logrus.New()
-	file, err := os.OpenFile("logrus.log", os.O_CREATE|os.O_WRONLY, 0666)
+	file, err := os.OpenFile("logger.log", os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -130,4 +188,57 @@ func main() {
 	}
 	log.SetLevel(logrus.DebugLevel)
 
+} */
+
+func main() {
+	log := logrus.New()
+	file, err := os.OpenFile("logger.log", os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	log.Out = file
+	log.SetLevel(logrus.DebugLevel)
+
+	item, err := GetDataToSearch()
+	if err != nil {
+		log.Fatal(err)
+	}
+	mapItem := item.Mapify()
+	values := url.Values{}
+	for k, v := range mapItem {
+		if v != "Default" && v != "0" {
+			values.Add(k, v)
+		}
+	}
+	encodedString := values.Encode()
+	urlThing := "https://db.ygoprodeck.com/api/v7/cardinfo.php?" + encodedString
+	fmt.Println(urlThing)
+	data, err := http.Get(urlThing)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer data.Body.Close()
+
+	bodyByte, err := io.ReadAll(data.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var dataCard ygoprodeck.CardData
+	jsonErr := json.Unmarshal(bodyByte, &dataCard)
+	if jsonErr != nil {
+		log.Fatal(jsonErr)
+	}
+	//spew.Dump(dataCard)
+	fmt.Println(dataCard.Data[0].Name)
+	//fmt.Println(string(bodyByte))
+	// var cards []ygoprodeck.YgoProDeckCard
+	// err = json.Unmarshal(bodyByte, &cards)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	//spew.Dump(cards)
+	//fmt.Println(string(bodyByte))
+	//fmt.Println(cards[0].Name)
+	// Use `cards` for further processing
 }

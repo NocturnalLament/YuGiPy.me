@@ -10,35 +10,38 @@ import (
 )
 
 // https://db.ygoprodeck.com/api/v7/cardinfo.php
-type YgoProDecData struct {
-	Data struct {
-		Id          int    `json:"id"`
+
+type CardData struct {
+	Data []struct {
+		ID          int    `json:"id"`
 		Name        string `json:"name"`
-		CardType    string `json:"type"`
+		Type        string `json:"type"`
 		FrameType   string `json:"frameType"`
 		Description string `json:"desc"`
-		Atk         int    `json:"atk"`
-		Def         int    `json:"def"`
+		ATK         int    `json:"atk"`
+		DEF         int    `json:"def"`
 		Level       int    `json:"level"`
 		Race        string `json:"race"`
 		Attribute   string `json:"attribute"`
 		CardSets    []struct {
-			SetName   string `json:"set_name"`
-			SetCode   string `json:"set_code"`
-			SetRarity string `json:"set_rarity"`
-			SetPrice  string `json:"set_price"`
+			SetName       string  `json:"set_name"`
+			SetCode       string  `json:"set_code"`
+			SetRarity     string  `json:"set_rarity"`
+			SetRarityCode string  `json:"set_rarity_code"`
+			SetPrice      float64 `json:"set_price,string"`
 		} `json:"card_sets"`
 		CardImages []struct {
-			Id              int    `json:"id"`
+			ID              int    `json:"id"`
 			ImageURL        string `json:"image_url"`
 			ImageURLSmall   string `json:"image_url_small"`
 			ImageURLCropped string `json:"image_url_cropped"`
 		} `json:"card_images"`
 		CardPrices []struct {
-			CardMarketPrice   string `json:"cardmarket_price"`
-			TCGPlayerPrice    string `json:"tcgplayer_price"`
-			AmazonPrice       string `json:"amazon_price"`
-			CoolstuffincPrice string `json:"coolstuffinc_price"`
+			CardmarketPrice   float64 `json:"cardmarket_price,string"`
+			TcgplayerPrice    float64 `json:"tcgplayer_price,string"`
+			EbayPrice         float64 `json:"ebay_price,string"`
+			AmazonPrice       float64 `json:"amazon_price,string"`
+			CoolstuffincPrice float64 `json:"coolstuffinc_price,string"`
 		} `json:"card_prices"`
 	} `json:"data"`
 }
@@ -120,9 +123,28 @@ type YuGiOhProDeckSearchData struct {
 	Banlist     string
 	Sort        string
 	Format      string
-	Misc        bool // Will either be unpassed or if true will be passed as "yes"
-	Staple      bool // Will either be unpassed or if true will be passed as "yes"
+	Misc        YuGiOhProDeckSearchMisc   // Will either be unpassed or if true will be passed as "yes"
+	Staple      YuGiOhProDeckSearchStaple // Will either be unpassed or if true will be passed as "yes"
 }
+
+type YuGiOhProDeckSearchMisc bool
+
+func (y YuGiOhProDeckSearchMisc) String() string {
+	if y {
+		return "yes"
+	}
+	return "no"
+}
+
+func (y YuGiOhProDeckSearchMisc) MarshalJSON() ([]byte, error) {
+	if y {
+		return []byte(`"yes"`), nil
+	} else {
+		return nil, fmt.Errorf("value is not 'yes', marshalling to JSON is not allowed")
+	}
+}
+
+type YuGiOhProDeckSearchStaple bool
 
 func NewYGOPRoDeckSearchData() *YuGiOhProDeckSearchData {
 	return &YuGiOhProDeckSearchData{
@@ -408,8 +430,8 @@ func GetValsFromPrompt(selectedItems []string) YGoProDeckPrompts {
 		switch item {
 		case "Name":
 			response["Name"] = GetFilterName()
-		case "FName":
-			response["FName"] = GetFuzzyNameFilter()
+		case "Fuzzy Name":
+			response["fname"] = GetFuzzyNameFilter()
 		case "ID":
 			response["Id"] = GetCardIDPrompt()
 		case "Konami ID":
@@ -523,4 +545,42 @@ func (p *YGoProDeckPrompts) ProcessPrompts() *YuGiOhProDeckSearchData {
 		}
 	}
 	return ygoPro
+}
+
+func (p YuGiOhProDeckSearchData) Mapify() map[string]string {
+	result := make(map[string]string)
+	vals := reflect.ValueOf(p)
+
+	for i := 0; i < vals.NumField(); i++ {
+		field := vals.Field(i)
+
+		fieldName := vals.Type().Field(i).Name
+		if misc, ok := field.Interface().(YuGiOhProDeckSearchMisc); ok {
+			//result[fieldName] = "yes"
+			//fieldValue := field.Interface().(bool)
+			if misc {
+				result[fieldName] = "yes"
+			}
+		} else if staple, ok := field.Interface().(YuGiOhProDeckSearchStaple); ok {
+			//[fieldName] = "yes"
+			if staple {
+				result[fieldName] = "yes"
+			}
+		}
+		switch field.Kind() {
+		case reflect.String:
+			if field.String() == "Default" {
+				continue
+			}
+			result[strings.ToLower(fieldName)] = field.String()
+		case reflect.Int:
+			if field.Int() == 0 {
+				continue
+			}
+			result[fieldName] = strconv.Itoa(int(field.Int()))
+		}
+
+	}
+
+	return result
 }
