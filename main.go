@@ -229,7 +229,7 @@ func main() {
 	if jsonErr != nil {
 		log.Fatal(jsonErr)
 	}
-	//spew.Dump(dataCard)
+	spew.Dump(dataCard)
 	fmt.Println(dataCard.Data[0].Name)
 	//fmt.Println(string(bodyByte))
 	// var cards []ygoprodeck.YgoProDeckCard
