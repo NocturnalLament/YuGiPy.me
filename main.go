@@ -1,16 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"os"
 
 	"github.com/NocturnalLament/yugigo/ygoprodeck"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/sirupsen/logrus"
 )
 
 // http://yugiohprices.com/api/get_card_prices/card_name/print_tag
@@ -106,19 +99,6 @@ type YugioPriceSetData struct {
 
 //func LogToFile()
 
-func GetDataToSearch() (*ygoprodeck.YuGiOhProDeckSearchData, error) {
-
-	items := ygoprodeck.ProDeckPrompt()
-	vals := ygoprodeck.GetValsFromPrompt(items)
-	item := vals.ProcessPrompts()
-	if item == nil {
-		return nil, fmt.Errorf("error processing prompts")
-	}
-	spew.Dump(item)
-	fmt.Printf("Item: %v\n", item.Name)
-	return item, nil
-}
-
 /* func main() {
 	hello := logger.StandardLogger{
 		Logger:      log.New(os.Stdout, "Hello: ", log.Ldate|log.Ltime|log.Lshortfile),
@@ -191,54 +171,83 @@ func GetDataToSearch() (*ygoprodeck.YuGiOhProDeckSearchData, error) {
 } */
 
 func main() {
-	log := logrus.New()
-	file, err := os.OpenFile("logger.log", os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	log.Out = file
-	log.SetLevel(logrus.DebugLevel)
-
-	item, err := GetDataToSearch()
-	if err != nil {
-		log.Fatal(err)
-	}
-	mapItem := item.Mapify()
-	values := url.Values{}
-	for k, v := range mapItem {
-		if v != "Default" && v != "0" {
-			values.Add(k, v)
-		}
-	}
-	encodedString := values.Encode()
-	urlThing := "https://db.ygoprodeck.com/api/v7/cardinfo.php?" + encodedString
-	fmt.Println(urlThing)
-	data, err := http.Get(urlThing)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer data.Body.Close()
-
-	bodyByte, err := io.ReadAll(data.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var dataCard ygoprodeck.CardData
-	jsonErr := json.Unmarshal(bodyByte, &dataCard)
-	if jsonErr != nil {
-		log.Fatal(jsonErr)
-	}
-	spew.Dump(dataCard)
-	fmt.Println(dataCard.Data[0].Name)
-	//fmt.Println(string(bodyByte))
-	// var cards []ygoprodeck.YgoProDeckCard
-	// err = json.Unmarshal(bodyByte, &cards)
+	// log := logrus.New()
+	// file, err := os.OpenFile("logger.log", os.O_CREATE|os.O_WRONLY, 0666)
 	// if err != nil {
 	// 	log.Fatal(err)
 	// }
-	//spew.Dump(cards)
-	//fmt.Println(string(bodyByte))
-	//fmt.Println(cards[0].Name)
-	// Use `cards` for further processing
+	// defer file.Close()
+	// log.Out = file
+	// log.SetLevel(logrus.DebugLevel)
+
+	// item, err := GetDataToSearch()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// mapItem := item.Mapify()
+	// values := url.Values{}
+	// for k, v := range mapItem {
+	// 	if v != "Default" && v != "0" {
+	// 		values.Add(k, v)
+	// 	}
+	// }
+	// encodedString := values.Encode()
+	// urlThing := "https://db.ygoprodeck.com/api/v7/cardinfo.php?" + encodedString
+	// fmt.Println(urlThing)
+	y, e := ygoprodeck.GetDataToSearch()
+	if e != nil {
+		fmt.Println(e)
+	}
+
+	card := ygoprodeck.URLAttrBuilder("Blue-Eyes White Dragon", y)
+	// c, err := ygoprodeck.Query(card)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println(c.Data[0].Name)
+	// fmt.Println(card)
+	fmt.Println(card)
+	f, err := ygoprodeck.Query(card)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(len(f.Data))
+	//spew.Dump(y)
+	// for k := range y {
+	// 	fmt.Println(y[k].Data[0].Name)
+	// }
+	//fmt.Println(string(b))
+	// data, err := http.Get(urlThing)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer data.Body.Close()
 }
+
+// bodyByte, err := io.ReadAll(data.Body)
+// if err != nil {
+// 	log.Fatal(err)
+// }
+// var dataCard ygoprodeck.CardData
+// jsonErr := json.Unmarshal(bodyByte, &dataCard)
+// if jsonErr != nil {
+// 	log.Fatal(jsonErr)
+// }
+//spew.Dump(dataCard)
+//fmt.Println(dataCard.Data[0].Name)
+// for card := range dataCard.Data {
+// 	name := dataCard.Data[card].Name
+// 	desc := dataCard.Data[card].Description
+// 	fullNameString := fmt.Sprintf("Name: %s\nDescription: %s\n", name, desc)
+// 	fmt.Println(fullNameString)
+// }
+//fmt.Println(string(bodyByte))
+// var cards []ygoprodeck.YgoProDeckCard
+// err = json.Unmarshal(bodyByte, &cards)
+// if err != nil {
+// 	log.Fatal(err)
+// }
+//spew.Dump(cards)
+//fmt.Println(string(bodyByte))
+//fmt.Println(cards[0].Name)
+// Use `cards` for further processing
