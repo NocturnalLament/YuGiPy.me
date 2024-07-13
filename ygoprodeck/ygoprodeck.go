@@ -7,9 +7,12 @@ import (
 	"strings"
 
 	"github.com/Iilun/survey/v2"
+	"github.com/NocturnalLament/yugigo/display"
+	"github.com/rivo/tview"
 )
 
 // https://db.ygoprodeck.com/api/v7/cardinfo.php
+var _ display.CardDataDisplay
 
 type CardData struct {
 	Data []struct {
@@ -44,6 +47,14 @@ type CardData struct {
 			CoolstuffincPrice float64 `json:"coolstuffinc_price,string"`
 		} `json:"card_prices"`
 	} `json:"data"`
+}
+
+func (c CardData) GetCardNames() []string {
+	names := []string{}
+	for _, card := range c.Data {
+		names = append(names, card.Name)
+	}
+	return names
 }
 
 type YGoProDeckPrompts map[string]string
@@ -125,6 +136,10 @@ type YuGiOhProDeckSearchData struct {
 	Format      string
 	Misc        YuGiOhProDeckSearchMisc   // Will either be unpassed or if true will be passed as "yes"
 	Staple      YuGiOhProDeckSearchStaple // Will either be unpassed or if true will be passed as "yes"
+}
+
+func (y CardData) DisplayData() {
+
 }
 
 type YuGiOhProDeckSearchMisc bool
@@ -366,4 +381,35 @@ func (p YuGiOhProDeckSearchData) Mapify() map[string]string {
 	}
 
 	return result
+}
+
+func (c CardData) DisplayCard(app *tview.Application, flex *tview.Flex, displayIndex int) {
+	if len(c.Data) > 0 {
+		card := c.Data[displayIndex]
+		var output string
+		output += fmt.Sprintf("Name: %s\n", card.Name)
+		output += fmt.Sprintf("Type: %s\n", card.Type)
+		output += fmt.Sprintf("ATK: %d\n", card.ATK)
+		output += fmt.Sprintf("DEF: %d\n", card.DEF)
+		output += fmt.Sprintf("Level: %d\n", card.Level)
+		for _, set := range card.CardSets {
+			output += fmt.Sprintf("Set Name: %s\n", set.SetName)
+			output += fmt.Sprintf("Set Code: %s\n", set.SetCode)
+			output += fmt.Sprintf("Set Rarity: %s\n", set.SetRarity)
+			output += fmt.Sprintf("Set Price: %f\n", set.SetPrice)
+		}
+		textView := tview.NewTextView()
+		textView.SetText(output)
+		textView.SetBorder(true)
+		textView.SetTitle("Card Information")
+		textView.SetTitleAlign(tview.AlignCenter)
+		textView.SetBorderPadding(1, 1, 2, 2)
+		textView.SetDynamicColors(true)
+		textView.SetWordWrap(true)
+		textView.SetWrap(true)
+		flex.AddItem(textView, 0, 1, false)
+	}
+	if err := app.SetRoot(flex, true).SetFocus(flex).Run(); err != nil {
+		panic(err)
+	}
 }

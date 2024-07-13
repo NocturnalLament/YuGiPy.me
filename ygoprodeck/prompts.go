@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/Iilun/survey/v2"
-	"github.com/davecgh/go-spew/spew"
 )
 
 func GetDataToSearch() (*YuGiOhProDeckSearchData, error) {
@@ -16,8 +15,8 @@ func GetDataToSearch() (*YuGiOhProDeckSearchData, error) {
 	if item == nil {
 		return nil, fmt.Errorf("error processing prompts")
 	}
-	spew.Dump(item)
-	fmt.Printf("Item: %v\n", item.Name)
+	//spew.Dump(item)
+	//fmt.Printf("Item: %v\n", item.Name)
 	return item, nil
 }
 
@@ -236,4 +235,19 @@ func GetLinkValuePrompt() string {
 		fmt.Println(err.Error())
 	}
 	return linkValue
+}
+
+func GetResultToDisplay(cards []string) string {
+	amountOfCards := len(cards)
+	messageToDisplay := fmt.Sprintf("Please Select the card to display, you have %d", amountOfCards)
+	prompt := survey.Select{
+		Message: messageToDisplay,
+		Options: cards,
+	}
+	selected := ""
+	err := survey.AskOne(&prompt, &selected)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return selected
 }

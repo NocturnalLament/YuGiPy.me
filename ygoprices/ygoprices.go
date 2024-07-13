@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 )
 
 type CardCollection struct {
@@ -45,7 +46,8 @@ type PriceDetails struct {
 func QueryPrices(cardName string) (*CardCollection, error) {
 	// Query the YugiohPrices API
 	// Return the response in a CardCollection struct
-	s := fmt.Sprintf("http://yugiohprices.com/api/get_card_prices/%s", cardName)
+	encodedCardName := url.QueryEscape(cardName)
+	s := fmt.Sprintf("http://yugiohprices.com/api/get_card_prices/%s", encodedCardName)
 	d, e := http.Get(s)
 	if e != nil {
 		log.Fatal(e)

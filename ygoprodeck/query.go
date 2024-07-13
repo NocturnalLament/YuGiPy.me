@@ -8,7 +8,7 @@ import (
 	"net/url"
 )
 
-func URLAttrBuilder(cardName string, y *YuGiOhProDeckSearchData) string {
+func URLAttrBuilder(y *YuGiOhProDeckSearchData) string {
 	yAttrMap := y.Mapify()
 	URLAttrs := url.Values{}
 	for k, v := range yAttrMap {

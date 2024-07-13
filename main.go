@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/Iilun/survey/v2"
+	"github.com/NocturnalLament/yugigo/ygoprices"
 	"github.com/NocturnalLament/yugigo/ygoprodeck"
 )
 
@@ -97,157 +99,136 @@ type YugioPriceSetData struct {
 	} `json:"data"`
 }
 
-//func LogToFile()
+type CardDataDisplay interface {
+	DisplayData()
+}
 
-/* func main() {
-	hello := logger.StandardLogger{
-		Logger:      log.New(os.Stdout, "Hello: ", log.Ldate|log.Ltime|log.Lshortfile),
-		Level:       logger.Info,
-		LogFilePath: "logr.log",
-	}
-	hello.Info("Hello, World!")
-	// Call the function
-	item, _ := GetDataToSearch()
-	mapItem := item.Mapify()
-	values := url.Values{}
-	for k, v := range mapItem {
-		if v != "Default" && v != "0" {
-			values.Add(k, v)
-		}
-	}
-	encodedStrin := values.Encode()
-	urlThing := "https://db.ygoprodeck.com/api/v7/cardinfo.php?" + encodedStrin
-	fmt.Println(urlThing)
-	data, err := http.Get(urlThing)
+type ExecutionMode interface {
+	Execute()
+}
+
+type CardDataMode struct {
+	Data *ygoprodeck.YuGiOhProDeckSearchData
+}
+type CardPricesMode struct {
+	CardName string
+	CardData *ygoprices.Card
+}
+type ServerMode struct{}
+
+func (c *CardDataMode) Execute() {
+	data, err := ygoprodeck.GetDataToSearch()
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
-	defer data.Body.Close()
-	var result map[string]interface{}
+	c.Data = data
+}
 
-	// Decode the response body to the struct or map
-	err = json.NewDecoder(data.Body).Decode(&result)
+func GetCardDataPrompt() {
+	prompt := survey.Input{
+		Message: "Enter the card name to search for:",
+	}
+	var cardName string
+	survey.AskOne(&prompt, &cardName)
+	card, err := ygoprodeck.GetDataToSearch()
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
-
-	//var y ygoprodeck.YgoProDecData
-	//bodyByte, err := io.ReadAll(data.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// err = json.Unmarshal(bodyByte, &y)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println(y.Data[0].Name)
-
-	// Now `result` holds the decoded JSON data
-	var cards []ygoprodeck.YgoProDeckCard
-
-	bodyByte, err := io.ReadAll(data.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = json.Unmarshal(bodyByte, &cards)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(data.Body)
-	fmt.Println(bodyByte)
-	data.Body.Close()
-	log := logrus.New()
-	file, err := os.OpenFile("logger.log", os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err == nil {
-		log.Out = file
-	} else {
-		log.Info("Failed to log to file, using default stderr")
-	}
-	log.SetLevel(logrus.DebugLevel)
-
-} */
-
-func main() {
-	// log := logrus.New()
-	// file, err := os.OpenFile("logger.log", os.O_CREATE|os.O_WRONLY, 0666)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer file.Close()
-	// log.Out = file
-	// log.SetLevel(logrus.DebugLevel)
-
-	// item, err := GetDataToSearch()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// mapItem := item.Mapify()
-	// values := url.Values{}
-	// for k, v := range mapItem {
-	// 	if v != "Default" && v != "0" {
-	// 		values.Add(k, v)
-	// 	}
-	// }
-	// encodedString := values.Encode()
-	// urlThing := "https://db.ygoprodeck.com/api/v7/cardinfo.php?" + encodedString
-	// fmt.Println(urlThing)
-	y, e := ygoprodeck.GetDataToSearch()
-	if e != nil {
-		fmt.Println(e)
-	}
-
-	card := ygoprodeck.URLAttrBuilder("Blue-Eyes White Dragon", y)
-	// c, err := ygoprodeck.Query(card)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// fmt.Println(c.Data[0].Name)
-	// fmt.Println(card)
-	fmt.Println(card)
-	f, err := ygoprodeck.Query(card)
+	url := ygoprodeck.URLAttrBuilder(card)
+	cardData, err := ygoprodeck.Query(url)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(len(f.Data))
-	//spew.Dump(y)
-	// for k := range y {
-	// 	fmt.Println(y[k].Data[0].Name)
-	// }
-	//fmt.Println(string(b))
-	// data, err := http.Get(urlThing)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer data.Body.Close()
+	names := cardData.GetCardNames()
+	nameToSearchSelect := survey.Select{
+		Message: "Select a card to search for:",
+		Options: names,
+	}
+	var nameToSearch string
+	survey.AskOne(&nameToSearchSelect, &nameToSearch)
+	fmt.Println(nameToSearch)
+	prices, err := ygoprices.QueryPrices(nameToSearch)
+	if err != nil {
+		fmt.Println(err)
+	}
+	amountOfCards := len(prices.Cards)
+	fmt.Println(amountOfCards)
+	if amountOfCards == 0 {
+		fmt.Println("No cards found")
+	}
+	for _, card := range prices.Cards {
+		fmt.Println(card.Name)
+		fmt.Println(card.PriceData.Data.Prices)
+	}
 }
 
-// bodyByte, err := io.ReadAll(data.Body)
-// if err != nil {
-// 	log.Fatal(err)
-// }
-// var dataCard ygoprodeck.CardData
-// jsonErr := json.Unmarshal(bodyByte, &dataCard)
-// if jsonErr != nil {
-// 	log.Fatal(jsonErr)
-// }
-//spew.Dump(dataCard)
-//fmt.Println(dataCard.Data[0].Name)
-// for card := range dataCard.Data {
-// 	name := dataCard.Data[card].Name
-// 	desc := dataCard.Data[card].Description
-// 	fullNameString := fmt.Sprintf("Name: %s\nDescription: %s\n", name, desc)
-// 	fmt.Println(fullNameString)
-// }
-//fmt.Println(string(bodyByte))
-// var cards []ygoprodeck.YgoProDeckCard
-// err = json.Unmarshal(bodyByte, &cards)
-// if err != nil {
-// 	log.Fatal(err)
-// }
-//spew.Dump(cards)
-//fmt.Println(string(bodyByte))
-//fmt.Println(cards[0].Name)
-// Use `cards` for further processing
+func (c *CardPricesMode) Execute() {
+	GetCardDataPrompt()
+}
+
+func ModeSwitch(mode string) ExecutionMode {
+	m := ExecutionMode(nil)
+	switch mode {
+	case "Card Data":
+		m = &CardDataMode{}
+	case "Card Prices":
+		m = &CardPricesMode{}
+	}
+	return m
+}
+
+func PickMode() string {
+	modes := []string{"Card Data", "Card Prices", "Server"}
+	prompt := survey.Select{
+		Message: "Select a mode to run in:",
+		Options: modes,
+	}
+	var mode string
+	survey.AskOne(&prompt, &mode)
+	return mode
+}
+
+func main() {
+	//Get data to search
+	mode := PickMode()
+	m := ModeSwitch(mode)
+	m.Execute()
+	//Build URL
+	//url := ygoprodeck.URLAttrBuilder(data)
+	//Query the API
+	//cardData, err := ygoprodeck.Query(url)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//Print the card data
+	//Get result to display
+	//names := cardData.GetCardNames()
+	//resToDisplay := ygoprodeck.GetResultToDisplay(names)
+	//fmt.Println(resToDisplay)
+	/* prices, err := ygoprices.QueryPrices(resToDisplay)
+	if err != nil {
+		fmt.Println(err)
+	} */
+	/*val := fmt.Sprintf("Returns: %v", len(prices.Cards))
+	fmt.Println(val) */
+	/*app := tview.NewApplication()
+	flex := tview.NewFlex().SetDirection(tview.FlexRow)
+	cardIndex := 0
+	//cardData.DisplayCard(app, flex)
+
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyEnter:
+			flex.Clear()
+			cardData.DisplayCard(app, flex, cardIndex)
+		case tcell.KeyTAB:
+			cardIndex++
+			flex.Clear()
+			cardData.DisplayCard(app, flex, cardIndex)
+		case tcell.KeyEscape:
+			app.Stop()
+		}
+		return event
+	})
+	cardData.DisplayCard(app, flex, cardIndex) */
+}
