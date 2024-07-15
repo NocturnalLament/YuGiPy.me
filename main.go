@@ -4,6 +4,10 @@ import (
 	"fmt"
 
 	"github.com/Iilun/survey/v2"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
+
+	"github.com/NocturnalLament/yugigo/display"
 	"github.com/NocturnalLament/yugigo/ygoprices"
 	"github.com/NocturnalLament/yugigo/ygoprodeck"
 )
@@ -109,10 +113,13 @@ type ExecutionMode interface {
 
 type CardDataMode struct {
 	Data *ygoprodeck.YuGiOhProDeckSearchData
+	App  *tview.Application
 }
 type CardPricesMode struct {
 	CardName string
 	CardData *ygoprices.Card
+	App      *tview.Application
+	Flex     *tview.Flex
 }
 type ServerMode struct{}
 
@@ -124,20 +131,24 @@ func (c *CardDataMode) Execute() {
 	c.Data = data
 }
 
-func GetCardDataPrompt() {
-	prompt := survey.Input{
-		Message: "Enter the card name to search for:",
-	}
-	var cardName string
-	survey.AskOne(&prompt, &cardName)
+func GetCardDataPrompt() (*ygoprodeck.CardData, error) {
 	card, err := ygoprodeck.GetDataToSearch()
 	if err != nil {
-		return
+		return nil, err
 	}
 	url := ygoprodeck.URLAttrBuilder(card)
 	cardData, err := ygoprodeck.Query(url)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
+	}
+
+	return cardData, nil
+}
+
+func SelectCardQuery() (string, int, error) {
+	cardData, err := GetCardDataPrompt()
+	if err != nil {
+		return "", -1, err
 	}
 	names := cardData.GetCardNames()
 	nameToSearchSelect := survey.Select{
@@ -149,21 +160,63 @@ func GetCardDataPrompt() {
 	fmt.Println(nameToSearch)
 	prices, err := ygoprices.QueryPrices(nameToSearch)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("error querying prices: %v", err)
 	}
 	amountOfCards := len(prices.Cards)
 	fmt.Println(amountOfCards)
 	if amountOfCards == 0 {
-		fmt.Println("No cards found")
+		return "", -1, fmt.Errorf("no cards found")
 	}
-	for _, card := range prices.Cards {
-		fmt.Println(card.Name)
-		fmt.Println(card.PriceData.Data.Prices)
-	}
+	return nameToSearch, amountOfCards, nil
+}
+
+func (c *CardPricesMode) setupInputCapture(amountOfCards int, prices *ygoprices.CardCollection) {
+	cardIndex := 0
+	c.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyEscape:
+			c.App.Stop()
+
+		case tcell.KeyEnter:
+			if cardIndex+1 <= amountOfCards {
+				cardIndex++
+				c.Flex.Clear()
+				display.DisplayCardQueryData(c.App, c.Flex, prices.Cards[cardIndex])
+			} else {
+				return event
+			}
+		}
+		return event
+	})
+}
+
+func (c *CardPricesMode) SetupView(prices *ygoprices.CardCollection, amountOfCards int) {
+	c.App = tview.NewApplication()
+	cardIndex := 0
+	c.Flex = tview.NewFlex().SetDirection(tview.FlexRow)
+	c.setupInputCapture(len(prices.Cards), prices)
+	display.DisplayCardQueryData(c.App, c.Flex, prices.Cards[cardIndex])
+
 }
 
 func (c *CardPricesMode) Execute() {
-	GetCardDataPrompt()
+	nameToSearch, amountOfCards, err := SelectCardQuery()
+	if amountOfCards == -1 {
+		fmt.Println(err)
+		return
+	}
+	if err != nil {
+		fmt.Println(err)
+	}
+	prices, err := ygoprices.QueryPrices(nameToSearch)
+	if err != nil {
+		fmt.Println(err)
+	}
+	//Begin View Logic.
+
+	c.SetupView(prices, amountOfCards)
+	c.App.Run()
+
 }
 
 func ModeSwitch(mode string) ExecutionMode {

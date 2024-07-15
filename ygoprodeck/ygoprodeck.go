@@ -138,8 +138,22 @@ type YuGiOhProDeckSearchData struct {
 	Staple      YuGiOhProDeckSearchStaple // Will either be unpassed or if true will be passed as "yes"
 }
 
-func (y CardData) DisplayData() {
-
+func (y CardData) DisplayData() string {
+	output := ""
+	for _, card := range y.Data {
+		output += fmt.Sprintf("Name: %s\n", card.Name)
+		output += fmt.Sprintf("Type: %s\n", card.Type)
+		output += fmt.Sprintf("ATK: %d\n", card.ATK)
+		output += fmt.Sprintf("DEF: %d\n", card.DEF)
+		output += fmt.Sprintf("Level: %d\n", card.Level)
+		for _, set := range card.CardSets {
+			output += fmt.Sprintf("Set Name: %s\n", set.SetName)
+			output += fmt.Sprintf("Set Code: %s\n", set.SetCode)
+			output += fmt.Sprintf("Set Rarity: %s\n", set.SetRarity)
+			output += fmt.Sprintf("Set Price: %f\n", set.SetPrice)
+		}
+	}
+	return output
 }
 
 type YuGiOhProDeckSearchMisc bool

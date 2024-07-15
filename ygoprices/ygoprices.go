@@ -7,7 +7,11 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+
+	"github.com/NocturnalLament/yugigo/display"
 )
+
+var _ display.CardDataDisplay
 
 type CardCollection struct {
 	Cards []Card `json:"Data"`
@@ -64,4 +68,27 @@ func QueryPrices(cardName string) (*CardCollection, error) {
 		return nil, e
 	}
 	return &y, nil
+}
+
+func (c Card) DisplayData() string {
+	output := ""
+	output += fmt.Sprintf("Name: %s\n", c.Name)
+	output += fmt.Sprintf("Print Tag: %s\n", c.PrintTag)
+	output += fmt.Sprintf("Rarity: %s\n", c.Rarity)
+	output += "Price Data:\n"
+	output += fmt.Sprintf("Status: %s\n", c.PriceData.Status)
+	output += "Prices: \n"
+	output += fmt.Sprintf("High: %.2f\n", c.PriceData.Data.Prices.High)
+	output += fmt.Sprintf("Low: %.2f\n", c.PriceData.Data.Prices.Low)
+	output += fmt.Sprintf("Average: %.2f\n", c.PriceData.Data.Prices.Average)
+	output += fmt.Sprintf("Shift: %.2f\n", c.PriceData.Data.Prices.Shift)
+	output += fmt.Sprintf("Shift 3: %.2f\n", c.PriceData.Data.Prices.Shift3)
+	output += fmt.Sprintf("Shift 7: %.2f\n", c.PriceData.Data.Prices.Shift7)
+	output += fmt.Sprintf("Shift 21: %.2f\n", c.PriceData.Data.Prices.Shift21)
+	output += fmt.Sprintf("Shift 30: %.2f\n", c.PriceData.Data.Prices.Shift30)
+	output += fmt.Sprintf("Shift 90: %.2f\n", c.PriceData.Data.Prices.Shift90)
+	output += fmt.Sprintf("Shift 180: %.2f\n", c.PriceData.Data.Prices.Shift180)
+	output += fmt.Sprintf("Shift 365: %.2f\n", c.PriceData.Data.Prices.Shift365)
+	output += fmt.Sprintf("Updated At: %s\n", c.PriceData.Data.Prices.UpdatedAt)
+	return output
 }
