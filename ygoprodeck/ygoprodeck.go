@@ -140,17 +140,19 @@ type YuGiOhProDeckSearchData struct {
 
 func (y CardData) DisplayData() string {
 	output := ""
-	for _, card := range y.Data {
+	for i, card := range y.Data {
 		output += fmt.Sprintf("Name: %s\n", card.Name)
 		output += fmt.Sprintf("Type: %s\n", card.Type)
 		output += fmt.Sprintf("ATK: %d\n", card.ATK)
 		output += fmt.Sprintf("DEF: %d\n", card.DEF)
 		output += fmt.Sprintf("Level: %d\n", card.Level)
+		output += fmt.Sprintf("Pic:%s\n", card.CardImages[0].ImageURL)
 		for _, set := range card.CardSets {
 			output += fmt.Sprintf("Set Name: %s\n", set.SetName)
 			output += fmt.Sprintf("Set Code: %s\n", set.SetCode)
 			output += fmt.Sprintf("Set Rarity: %s\n", set.SetRarity)
 			output += fmt.Sprintf("Set Price: %f\n", set.SetPrice)
+			output += fmt.Sprintf("Cardmarket Price: %f\n", card.CardPrices[i].CardmarketPrice)
 		}
 	}
 	return output
@@ -383,6 +385,8 @@ func (p YuGiOhProDeckSearchData) Mapify() map[string]string {
 		case reflect.String:
 			if field.String() == "Default" {
 				continue
+			} else if field.String() == "" {
+				continue
 			}
 			result[strings.ToLower(fieldName)] = field.String()
 		case reflect.Int:
@@ -398,6 +402,7 @@ func (p YuGiOhProDeckSearchData) Mapify() map[string]string {
 }
 
 func (c CardData) DisplayCard(app *tview.Application, flex *tview.Flex, displayIndex int) {
+
 	if len(c.Data) > 0 {
 		card := c.Data[displayIndex]
 		var output string
@@ -406,12 +411,14 @@ func (c CardData) DisplayCard(app *tview.Application, flex *tview.Flex, displayI
 		output += fmt.Sprintf("ATK: %d\n", card.ATK)
 		output += fmt.Sprintf("DEF: %d\n", card.DEF)
 		output += fmt.Sprintf("Level: %d\n", card.Level)
+		output += fmt.Sprintf("Pic:%s\n", card.CardImages[0].ImageURL)
 		for _, set := range card.CardSets {
 			output += fmt.Sprintf("Set Name: %s\n", set.SetName)
 			output += fmt.Sprintf("Set Code: %s\n", set.SetCode)
 			output += fmt.Sprintf("Set Rarity: %s\n", set.SetRarity)
 			output += fmt.Sprintf("Set Price: %f\n", set.SetPrice)
 		}
+		//output := c.DisplayData()
 		textView := tview.NewTextView()
 		textView.SetText(output)
 		textView.SetBorder(true)

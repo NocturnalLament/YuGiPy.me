@@ -3,18 +3,18 @@ package ygoprices
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/NocturnalLament/yugigo/display"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
-
-	"github.com/NocturnalLament/yugigo/display"
 )
 
 var _ display.CardDataDisplay
 
 type CardCollection struct {
-	Cards []Card `json:"Data"`
+	SearchTerm string
+	Cards      []Card `json:"Data"`
 }
 
 type Card struct {
@@ -52,6 +52,7 @@ func QueryPrices(cardName string) (*CardCollection, error) {
 	// Return the response in a CardCollection struct
 	encodedCardName := url.QueryEscape(cardName)
 	s := fmt.Sprintf("http://yugiohprices.com/api/get_card_prices/%s", encodedCardName)
+	fmt.Printf("issue: %s\n", s)
 	d, e := http.Get(s)
 	if e != nil {
 		log.Fatal(e)
@@ -61,9 +62,10 @@ func QueryPrices(cardName string) (*CardCollection, error) {
 	if e != nil {
 		log.Fatal(e)
 	}
-	//fmt.Println(string(b))
+	fmt.Println(string(b))
 	var y CardCollection
 	e = json.Unmarshal(b, &y)
+	fmt.Println(e)
 	if e != nil {
 		return nil, e
 	}
@@ -75,7 +77,7 @@ func (c Card) DisplayData() string {
 	output += fmt.Sprintf("Name: %s\n", c.Name)
 	output += fmt.Sprintf("Print Tag: %s\n", c.PrintTag)
 	output += fmt.Sprintf("Rarity: %s\n", c.Rarity)
-	output += "Price Data:\n"
+	output += "Price SearchData:\n"
 	output += fmt.Sprintf("Status: %s\n", c.PriceData.Status)
 	output += "Prices: \n"
 	output += fmt.Sprintf("High: %.2f\n", c.PriceData.Data.Prices.High)
