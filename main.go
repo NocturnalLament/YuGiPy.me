@@ -1,13 +1,14 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/Iilun/survey/v2"
 	"github.com/NocturnalLament/yugigo/display"
 	"github.com/NocturnalLament/yugigo/ygoprices"
 	"github.com/NocturnalLament/yugigo/ygoprodeck"
 	"github.com/gdamore/tcell/v2"
-
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/rivo/tview"
 )
 
@@ -262,6 +263,31 @@ func SelectCardQuery() (string, *ygoprices.CardCollection, int, error) {
 	return nameToSearch, prices, amountOfCards, nil
 }
 
+func (c CardPricesMode) InsertAllIntoDB() (bool, error) {
+	db, err := sql.Open("sqlite3", "card_data.db")
+	if err != nil {
+		return false, err
+	}
+	sqliteInsertStatement := `INSERT INTO card_data (CardName, CardSetName, PrintTag, CardPrice, High, Low, Average, Shift, Shift3, Shift7, Shift21, Shift30, Shift90, Shift180, Shift365, TimeLastUpdated, ImageUrl, CardURL, TrackedTime) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	statement, err := db.Prepare(sqliteInsertStatement)
+	if err != nil {
+		return false, err
+	}
+	defer func(statement *sql.Stmt) {
+		err := statement.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}(statement)
+	_, err = statement.Exec(c.CardName, c.Data.CardName, c.Data.PrintTag, c.Data.CardPrice, c.Data.High, c.Data.Low,
+		c.Data.Average, c.Data.Shift, c.Data.Shift3, c.Data.Shift7, c.Data.Shift21, c.Data.Shift30, c.Data.Shift90,
+		c.Data.Shift180, c.Data.Shift365, c.Data.TimeLastUpdated, c.Data.ImageUrl, c.Data.CardURL, c.Data.TrackedTime)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (c *CardPricesMode) setupInputCapture(amountOfCards int, prices *ygoprices.CardCollection) {
 	cardIndex := 0
 	c.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -312,6 +338,7 @@ func (c *CardPricesMode) setupInputCapture(amountOfCards int, prices *ygoprices.
 				Shift365:        card.PriceData.Data.Prices.Shift365,
 				TimeLastUpdated: card.PriceData.Data.Prices.UpdatedAt,
 			}
+			CPricesMode.Data = &y
 			display.DisplaySelectedCardPrice(c.App, c.Flex, y.CardString())
 
 		default:
@@ -354,6 +381,7 @@ func (c *CardPricesMode) Execute() {
 	for _, card := range prices.Cards {
 		priceDataStruct := ygoprices.NewYgoPriceData()
 		priceDataStruct.CardName = card.Name
+
 		priceDataStruct.PrintTag = card.PrintTag
 		priceDataStruct.CardPrice = ygoprices.YGOCardPrice(card.PriceData.Data.Prices.Average)
 		priceDataStruct.High = card.PriceData.Data.Prices.High
@@ -429,6 +457,10 @@ func main() {
 	m.Execute()
 	outThing := CPricesMode.CardName
 	fmt.Println(outThing)
+	_, err := CPricesMode.InsertAllIntoDB()
+	if err != nil {
+		fmt.Println(err)
+	}
 	//Build URL
 	//url := ygoprodeck.URLAttrBuilder(data)
 	//Query the API
