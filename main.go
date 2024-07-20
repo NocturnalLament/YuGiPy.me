@@ -7,6 +7,7 @@ import (
 	"github.com/NocturnalLament/yugigo/ygoprices"
 	"github.com/NocturnalLament/yugigo/ygoprodeck"
 	"github.com/gdamore/tcell/v2"
+
 	"github.com/rivo/tview"
 )
 
@@ -297,7 +298,7 @@ func (c *CardPricesMode) setupInputCapture(amountOfCards int, prices *ygoprices.
 			y := ygoprices.YgoPricesCardData{
 				CardName:        card.Name,
 				PrintTag:        card.PrintTag,
-				CardPrice:       card.PriceData.Data.Prices.Average,
+				CardPrice:       ygoprices.YGOCardPrice(card.PriceData.Data.Prices.Average),
 				High:            card.PriceData.Data.Prices.High,
 				Low:             card.PriceData.Data.Prices.Low,
 				Average:         card.PriceData.Data.Prices.Average,
@@ -354,7 +355,7 @@ func (c *CardPricesMode) Execute() {
 		priceDataStruct := ygoprices.NewYgoPriceData()
 		priceDataStruct.CardName = card.Name
 		priceDataStruct.PrintTag = card.PrintTag
-		priceDataStruct.CardPrice = card.PriceData.Data.Prices.Average
+		priceDataStruct.CardPrice = ygoprices.YGOCardPrice(card.PriceData.Data.Prices.Average)
 		priceDataStruct.High = card.PriceData.Data.Prices.High
 		priceDataStruct.Low = card.PriceData.Data.Prices.Low
 		priceDataStruct.Average = card.PriceData.Data.Prices.Average
@@ -399,7 +400,7 @@ func (c *CardPricesMode) Execute() {
 func ModeSwitch(mode string) ExecutionMode {
 	m := ExecutionMode(nil)
 	switch mode {
-	case "Card SearchData":
+	case "Card Search":
 		m = &CardDataMode{}
 	case "Card Prices":
 		m = &CardPricesMode{}
@@ -409,7 +410,7 @@ func ModeSwitch(mode string) ExecutionMode {
 }
 
 func PickMode() string {
-	modes := []string{"Card SearchData", "Card Prices", "Server"}
+	modes := []string{"Card Search", "Card Prices", "Server"}
 	prompt := survey.Select{
 		Message: "Select a mode to run in:",
 		Options: modes,
@@ -426,7 +427,8 @@ func main() {
 	mode := PickMode()
 	m := ModeSwitch(mode)
 	m.Execute()
-
+	outThing := CPricesMode.CardName
+	fmt.Println(outThing)
 	//Build URL
 	//url := ygoprodeck.URLAttrBuilder(data)
 	//Query the API
