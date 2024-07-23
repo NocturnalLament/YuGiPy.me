@@ -18,9 +18,9 @@ type CardCollection struct {
 }
 
 type Card struct {
-	Name      string    `json:"name"`
-	PrintTag  string    `json:"print_tag"`
-	Rarity    string    `json:"rarity"`
+	Name      string    `json:"name" db:"CardName"`
+	PrintTag  string    `json:"print_tag" db:"PrintTag"`
+	Rarity    string    `json:"rarity" db:""`
 	PriceData PriceData `json:"price_data"`
 }
 
@@ -47,13 +47,16 @@ type PriceDetails struct {
 	UpdatedAt string  `json:"updated_at"`
 }
 
+func QueryURLBuilder(cardName string) string {
+	encodedCardName := url.QueryEscape(cardName)
+	return fmt.Sprintf("http://yugiohprices.com/api/get_card_prices/%s", encodedCardName)
+}
+
 func QueryPrices(cardName string) (*CardCollection, error) {
 	// Query the YugiohPrices API
 	// Return the response in a CardCollection struct
-	encodedCardName := url.QueryEscape(cardName)
-	s := fmt.Sprintf("http://yugiohprices.com/api/get_card_prices/%s", encodedCardName)
-	fmt.Printf("issue: %s\n", s)
-	d, e := http.Get(s)
+	encodedCardName := QueryURLBuilder(cardName)
+	d, e := http.Get(encodedCardName)
 	if e != nil {
 		log.Fatal(e)
 	}
