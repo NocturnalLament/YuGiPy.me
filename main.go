@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/NocturnalLament/yugigo/maininterface"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -12,12 +11,9 @@ func main() {
 	//m := ModeSwitch(mode)
 	//m.Execute()
 	p := maininterface.ProgramLayout{}
+	modeStr := maininterface.PickMode()
+	modeConst := maininterface.GetExecConstant(modeStr)
+	p.ExecutionConst = modeConst
 	p.InitMode()
-	outThing := maininterface.CPricesMode.CardName
-	fmt.Println(outThing)
-	_, err := maininterface.CPricesMode.Insert()
-	if err != nil {
-		fmt.Println(err)
-	}
 
 }

@@ -4,10 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/Iilun/survey/v2"
+
 	"github.com/NocturnalLament/yugigo/ygoprices"
 	"github.com/NocturnalLament/yugigo/ygoprodeck"
 	"github.com/rivo/tview"
 )
+
+var ExecMode ExecutionMode
 
 // YugiohPricesDataByCardPrintTag http://yugiohprices.com/api/get_card_prices/card_name/print_tag
 type YugiohPricesDataByCardPrintTag struct {
@@ -128,18 +131,64 @@ type CardDataMode struct {
 	CardSelected     bool
 }
 
+func (c *CardDataMode) ModeSwitch() {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (c *CardDataMode) InitMode() {
+	//TODO implement me
+	panic("implement me")
+}
+
 type SubmodeOperator int
 
 const (
-	NoOperation SubmodeOperator = iota
+	Default SubmodeOperator = iota
 	Insert
-	Update
 	Read
-	Tracking
+	Update
 )
 
 type PriceMode struct {
-	Mode SubmodeOperator
+	Mode      SubmodeOperator
+	PriceData *ygoprices.YgoPricesCardData
+}
+
+func (p *PriceMode) InitMode() {
+	//TODO implement me
+	fmt.Println("hi")
+	items := []string{"Read", "Write"}
+	prompt := survey.Select{
+		Message: "Select a mode to run in:",
+		Options: items,
+	}
+	var result string
+	if err := survey.AskOne(&prompt, &result); err != nil {
+		return
+	}
+	switch result {
+	case "Read":
+		p.Mode = Read
+	case "Write":
+		p.Mode = Insert
+	}
+	p.ModeSwitch()
+}
+
+func (p *PriceMode) ModeSwitch() {
+	switch p.Mode {
+	case Read:
+		p.ReadData()
+		p.PriceData = ygoprices.NewYgoPriceData()
+	case Insert:
+		c := CardPricesMode{}
+		c.Execute()
+	}
+}
+
+func (p *PriceMode) Execute() {
+	p.InitMode()
 }
 
 func (p *PriceMode) UpdateMode(mode SubmodeOperator) {
@@ -147,23 +196,53 @@ func (p *PriceMode) UpdateMode(mode SubmodeOperator) {
 }
 
 func (p *PriceMode) ReadData() {
+	_, err := p.PriceData.ReadData()
+	if err != nil {
+		return
+	}
 	return
+}
+
+type ProgramSubmode interface {
+	ExecutionMode
+	ModeSwitch()
+	InitMode()
+}
+
+type ProgramModeDecision int
+
+const (
+	NoMode ProgramModeDecision = iota
+	Price
+	DataOperation
+)
+
+type Submode struct {
+	modeOperator ProgramModeDecision
+}
+
+func (s *Submode) SetMode(p ProgramModeDecision) {
+	s.modeOperator = p
+}
+
+func (s *Submode) ModeSwitch() {
+	switch s.modeOperator {
+	case Price:
+		ExecMode = &PriceMode{}
+	case DataOperation:
+		ExecMode = &CardDataMode{}
+	}
+}
+
+type DataOperations interface {
+	ReadData()
+	WriteData()
 }
 
 type PriceSubmode interface {
 	ExecutionMode
-	ReadData()
-	WriteData()
+	DataOperations
 	ModeSwitch()
-}
-
-type DataType struct {
-	SqlString string
-}
-
-type DataMode interface {
-	Insert()
-	Read()
 }
 
 type PriceLoader interface {
@@ -208,19 +287,6 @@ func formatDataForOutput(prices *ygoprices.CardCollection) []*ygoprices.YgoPrice
 	return pricesData
 }
 
-func ModeSwitch(mode string) ExecutionMode {
-	m := ExecutionMode(nil)
-	switch mode {
-	case "Card Search":
-		m = NewCPricesMode()
-	case "Card Prices":
-
-		m = &CardPricesMode{}
-
-	}
-	return m
-}
-
 func PickMode() string {
 	modes := []string{"Card Search", "Card Prices", "Server"}
 	prompt := survey.Select{
@@ -243,16 +309,22 @@ const (
 	None
 )
 
-type ProgramLayout struct {
-	Mode           ExecutionMode
-	ExecutionConst ExecConstant
+func GetExecConstant(modeString string) ExecConstant {
+	switch modeString {
+	case "Card Search":
+		return CardSearch
+	case "Card Prices":
+		return CardPrices
+	case "Server":
+		return Server
+	}
+	return None
 }
 
-func (p *ProgramLayout) NewLayoutDelivery() *ProgramLayout {
-	return &ProgramLayout{
-		Mode:           nil,
-		ExecutionConst: None,
-	}
+type ProgramLayout struct {
+	Mode           ExecutionMode
+	SMode          ProgramSubmode
+	ExecutionConst ExecConstant
 }
 
 func (p *ProgramLayout) ChangeExecConstant(e ExecConstant) {
@@ -263,11 +335,39 @@ func (p *ProgramLayout) ChangeExecConstant(e ExecConstant) {
 
 func (p *ProgramLayout) ChangeMode(m ExecutionMode) {
 	p.Mode = m
-	m.Execute()
+	p.Mode.Execute()
 }
 
-func (p ProgramLayout) InitMode() {
-	modeStr := PickMode()
-	m := ModeSwitch(modeStr)
-	p.ChangeMode(m)
+func (p *ProgramLayout) ChangeSublayout(exec string) {
+	switch exec {
+	case "Card Search":
+		p.SMode = &CardDataMode{}
+	case "Card Prices":
+		p.SMode = &PriceMode{}
+	}
+}
+
+func (p *ProgramLayout) ModeSwitch() {
+	switch p.ExecutionConst {
+	case CardSearch:
+		p.ChangeMode(&CardDataMode{})
+	case CardPrices:
+		p.ChangeMode(&PriceMode{})
+	}
+}
+
+func (p *ProgramLayout) AssignNewMode(modeString string) {
+	switch modeString {
+	case "Card Prices":
+		p.ChangeMode(&PriceMode{})
+	case "Card Search":
+		p.ChangeExecConstant(CardSearch)
+	}
+}
+
+func (p *ProgramLayout) InitMode() {
+
+	//m := ModeSwitch(modeStr)
+	p.ModeSwitch()
+
 }

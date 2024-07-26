@@ -23,6 +23,7 @@ type CardPricesMode struct {
 	CardUrl      string
 	NewPrice     bool
 	Prices       []CardPricesMode
+	LoadData     *ygoprices.YgoPricesCardData
 }
 
 func (c *CardPricesMode) setCMode(mode SubmodeOperator) {
@@ -30,7 +31,7 @@ func (c *CardPricesMode) setCMode(mode SubmodeOperator) {
 	c.modeSwitch()
 }
 
-func (c CardPricesMode) modeSwitch() {
+func (c *CardPricesMode) modeSwitch() {
 	switch c.cMode {
 	case Read:
 		success, err := c.ReadData()
@@ -72,7 +73,13 @@ func (c *CardPricesMode) Read() error {
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	//defer rows.Close()
+	func(rows *sql.Rows) {
+		errClose := rows.Close()
+		if errClose != nil {
+			fmt.Println(errClose)
+		}
+	}(rows)
 	for rows.Next() {
 		var cData CardTrackingData
 		err = cData.LoadSql(rows)
@@ -234,7 +241,7 @@ func (c *CardPricesMode) ReadData() (bool, error) {
 	//	fmt.Println(PrintTag)
 	//}
 	cardStruct := ygoprices.NewYgoPriceData()
-	stuff, err := cardStruct.ReadData()
+	stuff, err := cardStruct.ReadDataToSlice()
 	if err != nil {
 		return false, nil
 	}
@@ -293,8 +300,8 @@ func (c *CardPricesMode) Execute() {
 	}
 }
 
-func (c CardPricesMode) Insert() (bool, error) {
-	db, err := sql.Open("sqlite3", "card_data.db")
+func (c *CardPricesMode) Insert() (bool, error) {
+	db, err := sql.Open("sqlite3", "./dist/card_data.db")
 	if err != nil {
 		return false, err
 	}
