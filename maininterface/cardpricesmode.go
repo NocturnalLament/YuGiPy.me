@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Iilun/survey/v2"
 	"github.com/NocturnalLament/yugigo/display"
+	"github.com/NocturnalLament/yugigo/displaymanager"
 	"github.com/NocturnalLament/yugigo/ygoprices"
 	"github.com/NocturnalLament/yugigo/ygoprodeck"
 	"github.com/gdamore/tcell/v2"
@@ -12,18 +13,22 @@ import (
 )
 
 type CardPricesMode struct {
-	cMode        SubmodeOperator
-	CardName     string
-	SetName      string
-	CardData     *ygoprices.Card
-	App          *tview.Application
-	Flex         *tview.Flex
-	Data         *ygoprices.YgoPricesCardData
-	cardSelected bool
-	CardUrl      string
-	NewPrice     bool
-	Prices       []CardPricesMode
-	LoadData     *ygoprices.YgoPricesCardData
+	ProgramSubmode
+	cMode                SubmodeOperator
+	CardName             string
+	SetName              string
+	CardIndex            int
+	CardData             *ygoprices.Card
+	Display              *displaymanager.DisplayManager
+	DisplaySetupCallback func()
+	Data                 *ygoprices.YgoPricesCardData
+	cardSelected         bool
+	CardUrl              string
+	NewPrice             bool
+	CardSelected         bool
+	Prices               []CardPricesMode
+	Collection           *ygoprices.CardCollection
+	LoadData             *ygoprices.YgoPricesCardData
 }
 
 func (c *CardPricesMode) setCMode(mode SubmodeOperator) {
@@ -51,11 +56,13 @@ var CPricesMode *CardPricesMode
 
 func NewCPricesMode() *CardPricesMode {
 	return &CardPricesMode{
-		CardName:     "",
-		SetName:      "",
-		CardData:     nil,
-		App:          nil,
-		Flex:         nil,
+		CardName: "",
+		SetName:  "",
+		CardData: nil,
+		Display: &displaymanager.DisplayManager{
+			App:  tview.NewApplication(),
+			Flex: tview.NewFlex().SetDirection(tview.FlexRow),
+		},
 		Data:         nil,
 		cardSelected: false,
 		CardUrl:      "",
@@ -92,40 +99,55 @@ func (c *CardPricesMode) LoadSql(rows *sql.Rows) error {
 	return nil
 }
 
-func (c *CardPricesMode) setupInputCapture(amountOfCards int, prices *ygoprices.CardCollection) {
-	cardIndex := 0
-	c.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+func (c *CardPricesMode) SetupInputCapture(amountOfCards int, prices *ygoprices.CardCollection) {
+	if c.Display == nil {
+		fmt.Println("Display nil")
+		c.Display = &displaymanager.DisplayManager{
+			App:  tview.NewApplication(),
+			Flex: tview.NewFlex().SetDirection(tview.FlexRow),
+		}
+
+	}
+
+	c.Display.App.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyEscape:
-			c.App.Stop()
+			c.Display.App.Stop()
 
 		case tcell.KeyEnter:
+			if c.CardSelected == true {
+				_, err := c.Insert()
+				if err != nil {
+					fmt.Println(err)
+				}
+			}
 			if c.cardSelected {
-				c.Flex.Clear()
-				display.DisplayEndOfPrices(c.App, c.Flex)
-				c.App.Stop()
-			} else if cardIndex < amountOfCards {
-				c.Flex.Clear()
-				display.DisplayCardQueryData(c.App, c.Flex, len(prices.Cards), cardIndex, prices.Cards[cardIndex])
-				cardIndex++
+				c.Display.Flex.Clear()
+				display.DisplayEndOfPrices(c.Display.App, c.Display.Flex)
+				c.Display.App.Stop()
+			} else if c.CardIndex < amountOfCards {
+				c.Display.Flex.Clear()
+				display.DisplayCardQueryData(c.Display.App, c.Display.Flex, len(prices.Cards), c.CardIndex, prices.Cards[c.CardIndex])
+				c.CardIndex++
 
-			} else if cardIndex == amountOfCards {
-				c.Flex.Clear()
-				display.DisplayEndOfPrices(c.App, c.Flex)
-				c.App.Stop()
+			} else if c.CardIndex == amountOfCards {
+				c.Display.Flex.Clear()
+				display.DisplayEndOfPrices(c.Display.App, c.Display.Flex)
+				c.Display.App.Stop()
 			}
 		case tcell.KeyTAB:
-			c.Flex.Clear()
+			c.Display.Flex.Clear()
 			c.cardSelected = true
 			fmt.Println("Tab pressed")
 			selectedIndex := 0
-			if cardIndex > 0 {
-				selectedIndex = cardIndex - 1
+			if c.CardIndex > 0 {
+				selectedIndex = c.CardIndex - 1
 			}
 			card := prices.Cards[selectedIndex]
-			CPricesMode.CardData = &card
-			CPricesMode.SetName = card.Name
-			CPricesMode.CardUrl = ygoprices.QueryURLBuilder(CPricesMode.CardName)
+			c.CardData = &card
+			c.SetName = card.Name
+			c.CardUrl = ygoprices.QueryURLBuilder(c.CardName)
+
 			y := ygoprices.YgoPricesCardData{
 				CardName:        card.Name,
 				PrintTag:        card.PrintTag,
@@ -143,14 +165,16 @@ func (c *CardPricesMode) setupInputCapture(amountOfCards int, prices *ygoprices.
 				Shift365:        card.PriceData.Data.Prices.Shift365,
 				TimeLastUpdated: card.PriceData.Data.Prices.UpdatedAt,
 			}
-			CPricesMode.Data = &y
-			display.DisplaySelectedCardPrice(c.App, c.Flex, y.CardString())
+			c.Data = &y
+
+			c.CardSelected = true
+			display.DisplaySelectedCardPrice(c.Display.App, c.Display.Flex, y.CardString())
 
 		default:
 			switch event.Rune() {
 			case 's':
 
-				c.Flex.Clear()
+				c.Display.Flex.Clear()
 
 			}
 			return event
@@ -160,13 +184,15 @@ func (c *CardPricesMode) setupInputCapture(amountOfCards int, prices *ygoprices.
 }
 
 func (c *CardPricesMode) SetupView(prices *ygoprices.CardCollection, amountOfCards int) {
-	c.App = tview.NewApplication()
-	cardIndex := 0
-	c.Flex = tview.NewFlex().SetDirection(tview.FlexRow)
-	c.setupInputCapture(len(prices.Cards), prices)
-	display.DisplayCardQueryData(c.App, c.Flex, len(prices.Cards), cardIndex, prices.Cards[cardIndex])
+	c.CardIndex = 0
+	if c.Display.App == nil {
+		fmt.Println("Display nil")
+		c.Display = displaymanager.NewDisplayManager()
+	}
+	c.SetupInputCapture(len(prices.Cards), prices)
+	display.DisplayCardQueryData(c.Display.App, c.Display.Flex, len(prices.Cards), c.CardIndex, prices.Cards[c.CardIndex])
 
-	if err := c.App.SetRoot(c.Flex, true).SetFocus(c.Flex).Run(); err != nil {
+	if err := c.Display.App.SetRoot(c.Display.Flex, true).SetFocus(c.Display.Flex).Run(); err != nil {
 		panic(err)
 	}
 }
@@ -183,9 +209,11 @@ func (c *CardPricesMode) initializeMode() {
 	}
 	if response == "Write" {
 		c.NewPrice = true
+		c.Display = displaymanager.NewDisplayManager()
 	} else if response == "Read" {
 		c.NewPrice = false
 		c.setCMode(Read)
+		c.NewPrice = true
 	} else if response == "Load" {
 		return
 	}
@@ -252,15 +280,16 @@ func (c *CardPricesMode) ReadData() (bool, error) {
 }
 
 func (c *CardPricesMode) WriteData() (bool, error) {
+
 	return false, nil
 }
 
 func (c *CardPricesMode) Execute() {
 	c.initializeMode()
 	if c.NewPrice {
-		CPricesMode = NewCPricesMode()
+
 		nameToSearch, prices, amountOfCards, err := SelectCardQuery()
-		CPricesMode.CardName = nameToSearch
+		c.CardName = nameToSearch
 		fmt.Println(nameToSearch)
 
 		if err != nil {
@@ -272,20 +301,21 @@ func (c *CardPricesMode) Execute() {
 		fmt.Printf("Returned: %d\n", len(pricesData))
 
 		//Begin View Logic.
+		c.Collection = prices
 
-		c.SetupView(prices, amountOfCards)
-		if err = c.App.Run(); err != nil {
+		c.SetupView(c.Collection, amountOfCards)
+		if err = c.Display.App.Run(); err != nil {
 			fmt.Println(err)
 			return
 		}
-		c.App.Stop()
-		c.Flex.Clear()
+		c.Display.App.Stop()
+		c.Display.Flex.Clear()
 		fmt.Println("Hello world!")
-		fmt.Println(CPricesMode.CardName)
-		fmt.Println(CPricesMode.SetName)
+		fmt.Println(c.CardName)
+
 		d := ygoprodeck.YuGiOhProDeckSearchData{
-			Name:    CPricesMode.CardName,
-			CardSet: CPricesMode.SetName,
+			Name:    c.CardName,
+			CardSet: c.SetName,
 		}
 		url := ygoprodeck.URLAttrBuilder(&d)
 		fmt.Println(url)
@@ -308,6 +338,7 @@ func (c *CardPricesMode) Insert() (bool, error) {
 	sqliteInsertStatement := `INSERT INTO card_data (CardName, CardSetName, PrintTag, CardPrice, High, Low, Average, Shift, Shift3, Shift7, Shift21, Shift30, Shift90, Shift180, Shift365, TimeLastUpdated, ImageUrl, CardURL, TrackedTime) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 	statement, err := db.Prepare(sqliteInsertStatement)
 	if err != nil {
+		fmt.Println(err)
 		return false, err
 	}
 	defer func(statement *sql.Stmt) {
@@ -320,6 +351,7 @@ func (c *CardPricesMode) Insert() (bool, error) {
 		c.Data.Average, c.Data.Shift, c.Data.Shift3, c.Data.Shift7, c.Data.Shift21, c.Data.Shift30, c.Data.Shift90,
 		c.Data.Shift180, c.Data.Shift365, c.Data.TimeLastUpdated, c.Data.ImageUrl, c.CardUrl, c.Data.TrackedTime)
 	if err != nil {
+		fmt.Println(err)
 		return false, err
 	}
 	return true, nil

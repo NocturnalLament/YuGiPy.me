@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/NocturnalLament/yugigo/displaymanager"
 	"github.com/NocturnalLament/yugigo/maininterface"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -11,6 +12,8 @@ func main() {
 	//m := ModeSwitch(mode)
 	//m.Execute()
 	p := maininterface.ProgramLayout{}
+
+	p.Display = displaymanager.NewDisplayManager()
 	modeStr := maininterface.PickMode()
 	modeConst := maininterface.GetExecConstant(modeStr)
 	p.ExecutionConst = modeConst

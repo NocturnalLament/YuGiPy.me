@@ -10,14 +10,13 @@ import (
 	"net/url"
 )
 
-var _ display.CardDataDisplay
-
 type CardCollection struct {
 	SearchTerm string
 	Cards      []Card `json:"Data"`
 }
 
 type Card struct {
+	display.CardDataDisplay
 	Name      string    `json:"name" db:"CardName"`
 	PrintTag  string    `json:"print_tag" db:"PrintTag"`
 	Rarity    string    `json:"rarity" db:""`

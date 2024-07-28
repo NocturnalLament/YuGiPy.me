@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/Iilun/survey/v2"
+	"github.com/NocturnalLament/yugigo/displaymanager"
 
 	"github.com/NocturnalLament/yugigo/ygoprices"
 	"github.com/NocturnalLament/yugigo/ygoprodeck"
-	"github.com/rivo/tview"
 )
 
 var ExecMode ExecutionMode
@@ -124,11 +124,12 @@ func NewCardDataModeOutputStorage() *CarddataModeOutputStorage {
 }
 
 type CardDataMode struct {
-	SearchData       *ygoprodeck.YuGiOhProDeckSearchData
-	ReturnedCardData *ygoprodeck.CardData
-	App              *tview.Application
-	Flex             *tview.Flex
-	CardSelected     bool
+	SearchData           *ygoprodeck.YuGiOhProDeckSearchData
+	ReturnedCardData     *ygoprodeck.CardData
+	Display              *displaymanager.DisplayManager
+	DisplaySetupCallback func()
+	CardSelected         bool
+	CurrentCardIndex     int
 }
 
 func (c *CardDataMode) ModeSwitch() {
@@ -151,8 +152,9 @@ const (
 )
 
 type PriceMode struct {
-	Mode      SubmodeOperator
-	PriceData *ygoprices.YgoPricesCardData
+	Mode          SubmodeOperator
+	PriceData     *ygoprices.YgoPricesCardData
+	DataInsertion func()
 }
 
 func (p *PriceMode) InitMode() {
@@ -180,8 +182,8 @@ func (p *PriceMode) ModeSwitch() {
 	switch p.Mode {
 	case Read:
 		p.ReadData()
-		p.PriceData = ygoprices.NewYgoPriceData()
 	case Insert:
+		//TODO: Implement a way to get the CardPricesMode from
 		c := CardPricesMode{}
 		c.Execute()
 	}
@@ -323,8 +325,20 @@ func GetExecConstant(modeString string) ExecConstant {
 
 type ProgramLayout struct {
 	Mode           ExecutionMode
-	SMode          ProgramSubmode
+	SubmodeItem    Submode
 	ExecutionConst ExecConstant
+	Display        *displaymanager.DisplayManager
+}
+
+// Get Data in program layout
+func (p *ProgramLayout) CreateDisplayInput() {
+	switch mode := p.Mode.(type) {
+	case *CardDataMode:
+		mode.SetupInputCapture(mode.CurrentCardIndex, len(mode.ReturnedCardData.Data), mode.ReturnedCardData,
+			p.Display.App, p.Display.Flex)
+	case *CardPricesMode:
+		mode.SetupInputCapture(len(mode.Prices), mode.Collection)
+	}
 }
 
 func (p *ProgramLayout) ChangeExecConstant(e ExecConstant) {
@@ -335,24 +349,22 @@ func (p *ProgramLayout) ChangeExecConstant(e ExecConstant) {
 
 func (p *ProgramLayout) ChangeMode(m ExecutionMode) {
 	p.Mode = m
-	p.Mode.Execute()
-}
-
-func (p *ProgramLayout) ChangeSublayout(exec string) {
-	switch exec {
-	case "Card Search":
-		p.SMode = &CardDataMode{}
-	case "Card Prices":
-		p.SMode = &PriceMode{}
+	p.initSubmode()
+	switch mode := p.Mode.(type) {
+	case *CardPricesMode:
+		p.Mode.Execute()
+		mode.Display = displaymanager.NewDisplayManager()
 	}
 }
 
 func (p *ProgramLayout) ModeSwitch() {
 	switch p.ExecutionConst {
 	case CardSearch:
-		p.ChangeMode(&CardDataMode{})
+		p.ChangeMode(NewCPricesMode())
 	case CardPrices:
-		p.ChangeMode(&PriceMode{})
+
+		p.ChangeMode(NewCPricesMode())
+
 	}
 }
 
@@ -366,8 +378,17 @@ func (p *ProgramLayout) AssignNewMode(modeString string) {
 }
 
 func (p *ProgramLayout) InitMode() {
-
 	//m := ModeSwitch(modeStr)
-	p.ModeSwitch()
 
+	p.ModeSwitch()
+}
+
+func (p *ProgramLayout) initSubmode() {
+
+	switch mode := p.Mode.(type) {
+	case *CardPricesMode:
+		mode.DisplaySetupCallback = p.CreateDisplayInput
+	case *CardDataMode:
+		mode.DisplaySetupCallback = p.CreateDisplayInput
+	}
 }

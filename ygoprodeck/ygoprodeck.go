@@ -12,9 +12,9 @@ import (
 )
 
 // https://db.ygoprodeck.com/api/v7/cardinfo.php
-var _ display.CardDataDisplay
 
 type CardData struct {
+	display.CardDataDisplay
 	Data []struct {
 		ID          int    `json:"id"`
 		Name        string `json:"name"`

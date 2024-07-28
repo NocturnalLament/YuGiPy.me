@@ -13,8 +13,7 @@ func NewCDataMode() *CardDataMode {
 	return &CardDataMode{
 		SearchData:       nil,
 		ReturnedCardData: nil,
-		App:              nil,
-		Flex:             nil,
+		Display:          nil,
 	}
 }
 
