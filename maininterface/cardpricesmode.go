@@ -18,6 +18,7 @@ type CardPricesMode struct {
 	CardName             string
 	SetName              string
 	CardIndex            int
+	InsertionPrepared    bool
 	CardData             *ygoprices.Card
 	Display              *displaymanager.DisplayManager
 	DisplaySetupCallback func()
@@ -92,6 +93,21 @@ func (c *CardPricesMode) Read() error {
 	return nil
 }
 
+func (c *CardPricesMode) returnToConsole() {
+	// Stop the tview application
+	if c.Display != nil && c.Display.App != nil {
+		c.Display.App.Stop()
+	}
+
+	// Clear the tview Flex layout
+	if c.Display != nil && c.Display.Flex != nil {
+		c.Display.Flex.Clear()
+	}
+
+	// Print a message to indicate returning to the normal console
+	fmt.Println("Returning to the normal console...")
+}
+
 func (c *CardPricesMode) SetupInputCapture(amountOfCards int, prices *ygoprices.CardCollection) {
 	if c.Display == nil {
 		fmt.Println("Display nil")
@@ -108,16 +124,24 @@ func (c *CardPricesMode) SetupInputCapture(amountOfCards int, prices *ygoprices.
 			c.Display.App.Stop()
 
 		case tcell.KeyEnter:
-			if c.CardSelected == true {
+			/* if c.CardSelected == true {
 				_, err := c.Insert()
 				if err != nil {
 					fmt.Println(err)
 				}
-			}
-			if c.cardSelected {
+				c.CardSelected
+			} */
+			if c.InsertionPrepared && c.cardSelected {
+				_, err := c.Insert()
+				if err != nil {
+					panic(err)
+				}
+				c.returnToConsole()
+			} else if c.cardSelected {
 				c.Display.Flex.Clear()
 				display.DisplayEndOfPrices(c.Display.App, c.Display.Flex)
-				c.Display.App.Stop()
+
+				c.InsertionPrepared = true
 			} else if c.CardIndex < amountOfCards {
 				c.Display.Flex.Clear()
 				display.DisplayCardQueryData(c.Display.App, c.Display.Flex, len(prices.Cards), c.CardIndex, prices.Cards[c.CardIndex])
@@ -188,6 +212,7 @@ func (c *CardPricesMode) SetupView(prices *ygoprices.CardCollection) {
 	if err := c.Display.App.SetRoot(c.Display.Flex, true).SetFocus(c.Display.Flex).Run(); err != nil {
 		panic(err)
 	}
+	c.returnToConsole()
 }
 
 func (c *CardPricesMode) initializeMode() {
@@ -206,7 +231,6 @@ func (c *CardPricesMode) initializeMode() {
 	} else if response == "Read" {
 		c.NewPrice = false
 		c.setCMode(Read)
-		c.NewPrice = true
 	} else if response == "Load" {
 		return
 	}
@@ -297,12 +321,10 @@ func (c *CardPricesMode) Execute() {
 		c.Collection = prices
 
 		c.SetupView(c.Collection)
-		if err = c.Display.App.Run(); err != nil {
+		/* if err = c.Display.App.Run(); err != nil {
 			fmt.Println(err)
 			return
-		}
-		c.Display.App.Stop()
-		c.Display.Flex.Clear()
+		} */
 		fmt.Println("Hello world!")
 		fmt.Println(c.CardName)
 
