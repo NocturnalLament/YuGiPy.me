@@ -354,13 +354,16 @@ func (p *ProgramLayout) ChangeMode(m ExecutionMode) {
 	case *CardPricesMode:
 		p.Mode.Execute()
 		mode.Display = displaymanager.NewDisplayManager()
+	case *CardDataMode:
+		mode.Display = displaymanager.NewDisplayManager()
+		mode.Execute()
 	}
 }
 
 func (p *ProgramLayout) ModeSwitch() {
 	switch p.ExecutionConst {
 	case CardSearch:
-		p.ChangeMode(NewCPricesMode())
+		p.ChangeMode(NewCDataMode())
 	case CardPrices:
 
 		p.ChangeMode(NewCPricesMode())

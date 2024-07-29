@@ -3,7 +3,7 @@ package maininterface
 import (
 	"database/sql"
 	"fmt"
-	"github.com/Iilun/survey/v2"
+	survey "github.com/Iilun/survey/v2"
 	"github.com/NocturnalLament/yugigo/display"
 	"github.com/NocturnalLament/yugigo/displaymanager"
 	"github.com/NocturnalLament/yugigo/ygoprices"
@@ -52,8 +52,6 @@ func (c *CardPricesMode) modeSwitch() {
 
 var CDataMode *CardDataMode
 
-var CPricesMode *CardPricesMode
-
 func NewCPricesMode() *CardPricesMode {
 	return &CardPricesMode{
 		CardName: "",
@@ -91,11 +89,6 @@ func (c *CardPricesMode) Read() error {
 		var cData CardTrackingData
 		err = cData.LoadSql(rows)
 	}
-	return nil
-}
-
-func (c *CardPricesMode) LoadSql(rows *sql.Rows) error {
-
 	return nil
 }
 
@@ -183,7 +176,7 @@ func (c *CardPricesMode) SetupInputCapture(amountOfCards int, prices *ygoprices.
 	})
 }
 
-func (c *CardPricesMode) SetupView(prices *ygoprices.CardCollection, amountOfCards int) {
+func (c *CardPricesMode) SetupView(prices *ygoprices.CardCollection) {
 	c.CardIndex = 0
 	if c.Display.App == nil {
 		fmt.Println("Display nil")
@@ -288,7 +281,7 @@ func (c *CardPricesMode) Execute() {
 	c.initializeMode()
 	if c.NewPrice {
 
-		nameToSearch, prices, amountOfCards, err := SelectCardQuery()
+		nameToSearch, prices, _, err := SelectCardQuery()
 		c.CardName = nameToSearch
 		fmt.Println(nameToSearch)
 
@@ -303,7 +296,7 @@ func (c *CardPricesMode) Execute() {
 		//Begin View Logic.
 		c.Collection = prices
 
-		c.SetupView(c.Collection, amountOfCards)
+		c.SetupView(c.Collection)
 		if err = c.Display.App.Run(); err != nil {
 			fmt.Println(err)
 			return

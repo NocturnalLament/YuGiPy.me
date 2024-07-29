@@ -50,14 +50,14 @@ type CardData struct {
 }
 
 func (c CardData) GetCardNames() []string {
-	names := []string{}
+	var names []string
 	for _, card := range c.Data {
 		names = append(names, card.Name)
 	}
 	return names
 }
 
-type YGoProDeckPrompts map[string]string
+type Prompts map[string]string
 
 // http://yugiohprices.com/api/get_card_prices/card_name
 type YugiohPricesByCardName struct {
@@ -91,30 +91,6 @@ type YugiohProDeckSearchByType int
 
 type YuGiOhProDeckStructFields map[string]string
 
-func InitialzeYuGiOhProDeckMap() YuGiOhProDeckStructFields {
-	return YuGiOhProDeckStructFields{
-		"Name":        "name",
-		"FName":       "fname",
-		"Id":          "id",
-		"KonamiId":    "id",
-		"Type":        "type",
-		"Atk":         "atk",
-		"Def":         "def",
-		"Level":       "level",
-		"Race":        "race",
-		"Attribute":   "attribute",
-		"Link":        "link",
-		"LinkMarkers": "linkmarkers",
-		"Scale":       "scale",
-		"CardSet":     "cardset",
-		"Archetype":   "archetype",
-		"Banlist":     "banlist",
-		"Sort":        "sort",
-		"Format":      "format",
-		"Misc":        "misc",
-	}
-}
-
 type YuGiOhProDeckSearchData struct {
 	Name        string
 	FName       string
@@ -138,9 +114,9 @@ type YuGiOhProDeckSearchData struct {
 	Staple      YuGiOhProDeckSearchStaple // Will either be unpassed or if true will be passed as "yes"
 }
 
-func (y CardData) DisplayData() string {
+func (c CardData) DisplayData() string {
 	output := ""
-	for i, card := range y.Data {
+	for i, card := range c.Data {
 		output += fmt.Sprintf("Name: %s\n", card.Name)
 		output += fmt.Sprintf("Type: %s\n", card.Type)
 		output += fmt.Sprintf("ATK: %d\n", card.ATK)
@@ -238,7 +214,7 @@ func GetPendulumScalePrompt() string {
 	return scale
 }
 
-func GetValsFromPrompt(selectedItems []string) YGoProDeckPrompts {
+func GetValsFromPrompt(selectedItems []string) Prompts {
 	response := make(map[string]string)
 	for _, item := range selectedItems {
 		switch item {
@@ -331,7 +307,7 @@ func PromptSortBy() string {
 	return selected
 }
 
-func (p *YGoProDeckPrompts) ProcessPrompts() *YuGiOhProDeckSearchData {
+func (p *Prompts) ProcessPrompts() *YuGiOhProDeckSearchData {
 	ygoPro := NewYGOPRoDeckSearchData()
 	for key, prompt := range *p {
 		promptLower := strings.ToLower(key)
