@@ -48,22 +48,20 @@ func (c *CardDataMode) SetupInputCapture(cardIndex int, amountOfCards int, cardD
 }
 
 func (c *CardDataMode) Execute() {
-	CDataMode = NewCDataMode()
 	data, err := ygoprodeck.GetDataToSearch()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	c.SearchData = data
-	CDataMode.SearchData = data
-	url := ygoprodeck.URLAttrBuilder(data)
+	url := ygoprodeck.URLAttrBuilder(c.SearchData)
 	cardData, err := ygoprodeck.Query(url)
 
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	CDataMode.ReturnedCardData = cardData
+	c.ReturnedCardData = cardData
 	app := tview.NewApplication()
 	flex := tview.NewFlex().SetDirection(tview.FlexRow)
 	amountOfCards := len(cardData.Data)

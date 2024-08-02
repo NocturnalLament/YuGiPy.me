@@ -12,6 +12,7 @@ type WriterInterface interface {
 
 type WriterData struct {
 	cardIndex                           int
+	cardIndexBuffer                     []int
 	cardName                            string
 	setName                             string
 	cardUrl                             string
@@ -25,12 +26,17 @@ type WriterData struct {
 func NewWriterData() *WriterData {
 	return &WriterData{
 		cardIndex:                           0,
+		cardIndexBuffer:                     make([]int, 0),
 		data:                                nil,
 		amountOfCardsToWrite:                0,
 		structWriteType:                     "",
 		WriteManagerStatementStringCallback: nil,
 		sqliteStatement:                     make([]*sql.Stmt, 0),
 	}
+}
+
+func (w *WriterData) AddIndexToBuffer(i int) {
+	w.cardIndexBuffer = append(w.cardIndexBuffer, i)
 }
 
 func (w *WriterData) SetAmountOfCardsToWrite(amountOfCards int) {

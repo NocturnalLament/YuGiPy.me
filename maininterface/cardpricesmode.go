@@ -248,6 +248,7 @@ func (c *CardPricesMode) Execute() {
 
 		if err != nil {
 			fmt.Println(err)
+			return
 		}
 		fmt.Println(nameToSearch)
 
