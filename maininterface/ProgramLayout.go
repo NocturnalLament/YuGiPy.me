@@ -49,11 +49,11 @@ func (p *ProgramLayout) initSubmode() {
 	}
 }
 
-// Get Data in program layout
+// Get SqliteDataRecord in program layout
 func (p *ProgramLayout) CreateDisplayInput() {
 	//switch mode := p.Mode.(type) {
 	//case *CardDataMode:
-	//	mode.SetupInputCapture(mode.CurrentCardIndex, len(mode.ReturnedCardData.Data), mode.ReturnedCardData,
+	//	mode.SetupInputCapture(mode.CurrentCardIndex, len(mode.ReturnedCardData.SqliteDataRecord), mode.ReturnedCardData,
 	//		p.Display.App, p.Display.Flex)
 	//case *CardPricesMode:
 	//	mode.SetupInputCapture(len(mode.Prices), mode.Collection)

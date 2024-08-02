@@ -12,7 +12,7 @@ import (
 
 type CardCollection struct {
 	SearchTerm string
-	Cards      []Card `json:"Data"`
+	Cards      []Card `json:"SqliteDataRecord"`
 }
 
 type Card struct {
