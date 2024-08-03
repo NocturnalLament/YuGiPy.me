@@ -79,7 +79,7 @@ func (c *CardPricesMode) SetupView(prices *ygoprices.CardCollection) {
 		c.Display = displaymanager.NewDisplayManager()
 	}
 	c.SetupInputCapture(len(prices.Cards), prices)
-	display.DisplayCardQueryData(c.Display.App, c.Display.Flex, len(prices.Cards), c.CardIndex, prices.Cards[c.CardIndex])
+	display.ShowCardQueryData(c.Display.Flex, len(prices.Cards), c.CardIndex, prices.Cards[c.CardIndex])
 
 	if err := c.Display.App.SetRoot(c.Display.Flex, true).SetFocus(c.Display.Flex).Run(); err != nil {
 		panic(err)
@@ -144,7 +144,7 @@ func (c *CardPricesMode) SetupInputCapture(amountOfCards int, prices *ygoprices.
 				c.InsertionPrepared = true
 			} else if c.CardIndex < amountOfCards {
 				c.Display.Flex.Clear()
-				display.DisplayCardQueryData(c.Display.App, c.Display.Flex, len(prices.Cards), c.CardIndex, prices.Cards[c.CardIndex])
+				display.ShowCardQueryData(c.Display.Flex, len(prices.Cards), c.CardIndex, prices.Cards[c.CardIndex])
 				c.CardIndex++
 
 			} else if c.CardIndex == amountOfCards {
@@ -240,41 +240,44 @@ func (c *CardPricesMode) ReadData() (bool, error) {
 
 func (c *CardPricesMode) Execute() {
 	c.initializeMode()
+	c.executionModeSwitch()
+}
+
+func (c *CardPricesMode) executionModeSwitch() {
 	if c.NewPrice {
 
-		nameToSearch, prices, _, err := SelectCardQuery()
-		c.CardName = nameToSearch
-		fmt.Println(nameToSearch)
-
+		err, done := c.QueryData()
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		fmt.Println(nameToSearch)
-
-		pricesData := formatDataForOutput(prices)
-		fmt.Printf("Returned: %d\n", len(pricesData))
-
-		//Begin View Logic.
-		c.Collection = prices
-
+		if done {
+			return
+		}
 		c.SetupView(c.Collection)
-
-		d := ygoprodeck.YuGiOhProDeckSearchData{
-			Name:    c.CardName,
-			CardSet: c.SetName,
-		}
-		url := ygoprodeck.URLAttrBuilder(&d)
-		fmt.Println(url)
-		newCardData, err := ygoprodeck.Query(url)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		fmt.Println(newCardData.DisplayData())
 	} else {
 		fmt.Println("Exiting...")
 	}
+}
+
+func (c *CardPricesMode) QueryData() (error, bool) {
+	nameToSearch, prices, err, done := c.GetCardQueryData()
+	if done {
+		return nil, true
+	}
+	c.CardName = nameToSearch
+	//Begin View Logic.
+	c.Collection = prices
+	return err, false
+}
+
+func (c *CardPricesMode) GetCardQueryData() (string, *ygoprices.CardCollection, error, bool) {
+	nameToSearch, prices, _, err := SelectCardQuery()
+	if err != nil {
+		fmt.Println(err)
+		return "", nil, nil, true
+	}
+	return nameToSearch, prices, err, false
 }
 
 func (c *CardPricesMode) Write() error {

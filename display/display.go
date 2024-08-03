@@ -10,7 +10,7 @@ type CardDataDisplay interface {
 
 //func DisplayData(app *tview.Application, flex *tview.Flex, data CardDataDisplay)
 
-func DisplayCardQueryData(app *tview.Application, flex *tview.Flex, length int, index int, data CardDataDisplay) {
+func ShowCardQueryData(flex *tview.Flex, length int, index int, data CardDataDisplay) {
 	outData := data.DisplayData()
 	text := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
