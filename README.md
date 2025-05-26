@@ -1,4 +1,4 @@
-# Yu-Gi-Go
+# Yu-Gi-Py
 A tool for the YuGiOh Trading Card Game By Konami written in Go with love 💜
 
 This is a project whos main purpose is for me to add to in public and hold myself accountable to consistently commit my projects to version control. Also- I have a habit of never making anything public so I'm going to just start coding in public now.
